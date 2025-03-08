@@ -22,7 +22,7 @@ module.exports = {
   ignorePatterns: ["!**/.server", "!**/.client"],
 
   // Base config
-  extends: ["eslint:recommended"],
+  extends: ["eslint:recommended", "prettier"],
 
   overrides: [
     // React
@@ -71,6 +71,20 @@ module.exports = {
         "plugin:import/recommended",
         "plugin:import/typescript",
       ],
+      rules: {
+        "@typescript-eslint/no-unused-vars": [
+          "warn",
+          {
+            argsIgnorePattern: "^_",
+            varsIgnorePattern: "^_",
+          }
+        ],
+        "@typescript-eslint/consistent-type-imports": [
+          "error",
+          {disallowTypeAnnotations: true, fixStyle: "separate-type-imports", prefer: "type-imports"}
+        ],
+        "@typescript-eslint/consistent-type-exports": "error"
+      }
     },
 
     // Node

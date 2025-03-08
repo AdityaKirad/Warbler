@@ -1,0 +1,49 @@
+{
+	"loader": {
+		"prefix": "/loader",
+		"scope": "typescript,typescriptreact",
+		"body": [
+			"import type { LoaderFunctionArgs } from '@remix-run/node'",
+			"",
+			"export async function loader({request}: LoaderFunctionArgs) {",
+			"   return {}",
+			"}"
+		]
+	},
+
+	"action": {
+		"prefix": "/action",
+		"scope": "typescript,typescriptreact",
+		"body": [
+			"import type { ActionFunctionArgs } from '@remix-run/node'",
+			"",
+			"export async function action({request}: ActionFunctionArgs) {",
+			"   return {}",
+			"}"
+		]
+	},
+
+	"page": {
+		"prefix": "/page",
+		"scope": "typescriptreact",
+		"body": [
+			"export default function Page() {",
+			"   return (",
+			"     <div>New Page</div>",
+			"   )",
+			"}"
+		]
+	},
+
+	"layout": {
+		"prefix": "/layout",
+		"scope": "typescriptreact",
+		"body": [
+			"export default function Layout() {",
+			"   return (",
+			"     <div>Route Layout</div>",
+			"   )",
+			"}"
+		]
+	}
+}
