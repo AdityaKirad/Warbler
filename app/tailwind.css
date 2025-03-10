@@ -23,23 +23,94 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
     --radius: 0.5rem;
   }
+
+  /* For browsers that support clamp  */
+  @supports (font-size: clamp(1rem, 1vi, 1rem)) {
+    :root {
+      --fs-body: clamp(0.88rem, 0.67vi + 0.61rem, 1.25rem);
+      --fs-heading: clamp(1.09rem, 0.84vi + 0.76rem, 1.56rem);
+      --fs-auth-sub-heading: clamp(2.14rem, 1.63vi + 1.48rem, 3.05rem);
+      --fs-auth-heading: clamp(2.67rem, 2.04vi + 1.85rem, 3.81rem);
+    }
+  }
+
+  /* For browsers that don't support clamp */
+  @supports not (font-size: clamp(1rem, 1vi, 1rem)) {
+    :root {
+      --fs-body: 0.88rem;
+      --fs-heading: 1.09rem;
+      --fs-auth-sub-heading: 2.14rem;
+      --fs-auth-heading: 2.67rem;
+    }
+
+    @media screen and (min-width: 1280px) {
+      :root {
+        --fs-body: 1.25rem;
+        --fs-heading: 1.56rem;
+        --fs-auth-sub-heading: 3.05rem;
+        --fs-auth-heading: 3.81rem;
+      }
+    }
+
+    @supports (scrollbar-width: auto) {
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: hsl(var(--border)) transparent;
+      }
+    }
+  }
 }
-
-
 
 @layer base {
   * {
     @apply border-border;
   }
 
+  html,
   body {
-    @apply bg-background text-foreground;
+    @apply h-full;
+  }
+
+  body {
+    @apply max-w-full overflow-x-hidden overscroll-y-none bg-background text-foreground antialiased;
+  }
+
+  img {
+    @apply bg-cover bg-no-repeat italic;
+    shape-margin: 0.75rem;
+  }
+
+  input::-webkit-credentials-auto-fill-button,
+  input::-ms-reveal,
+  input[type="date"]::-ms-clear {
+    @apply hidden;
+  }
+
+  input[type="date"] {
+    @apply relative;
+    color-scheme: dark;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    @apply opacity-100;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    @apply absolute top-1/2 -translate-y-1/2 right-4 m-0 opacity-50 size-3 cursor-pointer;
+    background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWNhbGVuZGFyIj48cGF0aCBkPSJNOCAydjQiLz48cGF0aCBkPSJNMTYgMnY0Ii8+PHJlY3Qgd2lkdGg9IjE4IiBoZWlnaHQ9IjE4IiB4PSIzIiB5PSI0IiByeD0iMiIvPjxwYXRoIGQ9Ik0zIDEwaDE4Ii8+PC9zdmc+") center / contain no-repeat;
+    filter: invert(76%) sepia(9%) saturate(209%) hue-rotate(201deg) brightness(84%) contrast(87%);
+  }
+
+  input[type="date"]:empty {
+    @apply text-muted-foreground;
+  }
+}
+
+@layer components {
+  .loading {
+    @apply pointer-events-none inline-block aspect-square bg-current;
+    mask: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMjQnIGhlaWdodD0nMjQnIHN0cm9rZT0nIzAwMCcgdmlld0JveD0nMCAwIDI0IDI0JyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnPjxzdHlsZT4uc3Bpbm5lcl9WOG0xe3RyYW5zZm9ybS1vcmlnaW46Y2VudGVyO2FuaW1hdGlvbjpzcGlubmVyX3pLb2EgMnMgbGluZWFyIGluZmluaXRlfS5zcGlubmVyX1Y4bTEgY2lyY2xle3N0cm9rZS1saW5lY2FwOnJvdW5kO2FuaW1hdGlvbjpzcGlubmVyX1lwWlMgMS41cyBlYXNlLW91dCBpbmZpbml0ZX1Aa2V5ZnJhbWVzIHNwaW5uZXJfektvYXsxMDAle3RyYW5zZm9ybTpyb3RhdGUoMzYwZGVnKX19QGtleWZyYW1lcyBzcGlubmVyX1lwWlN7MCV7c3Ryb2tlLWRhc2hhcnJheTowIDE1MDtzdHJva2UtZGFzaG9mZnNldDowfTQ3LjUle3N0cm9rZS1kYXNoYXJyYXk6NDIgMTUwO3N0cm9rZS1kYXNob2Zmc2V0Oi0xNn05NSUsMTAwJXtzdHJva2UtZGFzaGFycmF5OjQyIDE1MDtzdHJva2UtZGFzaG9mZnNldDotNTl9fTwvc3R5bGU+PGcgY2xhc3M9J3NwaW5uZXJfVjhtMSc+PGNpcmNsZSBjeD0nMTInIGN5PScxMicgcj0nOS41JyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9JzMnPjwvY2lyY2xlPjwvZz48L3N2Zz4=) no-repeat center / 100%;
   }
 }

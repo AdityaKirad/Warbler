@@ -55,6 +55,10 @@ module.exports = {
       files: ["**/*.{ts,tsx}"],
       plugins: ["@typescript-eslint", "import"],
       parser: "@typescript-eslint/parser",
+      parserOptions: {
+        project: "./tsconfig.json",
+        tsconfigRootDir: __dirname,
+      },
       settings: {
         "import/internal-regex": "^~/",
         "import/resolver": {
@@ -66,25 +70,21 @@ module.exports = {
           },
         },
       },
-      extends: [
-        "plugin:@typescript-eslint/recommended",
-        "plugin:import/recommended",
-        "plugin:import/typescript",
-      ],
+      extends: ["plugin:@typescript-eslint/recommended", "plugin:import/recommended", "plugin:import/typescript"],
       rules: {
         "@typescript-eslint/no-unused-vars": [
           "warn",
           {
             argsIgnorePattern: "^_",
             varsIgnorePattern: "^_",
-          }
+          },
         ],
         "@typescript-eslint/consistent-type-imports": [
           "error",
-          {disallowTypeAnnotations: true, fixStyle: "separate-type-imports", prefer: "type-imports"}
+          { disallowTypeAnnotations: true, fixStyle: "separate-type-imports", prefer: "type-imports" },
         ],
-        "@typescript-eslint/consistent-type-exports": "error"
-      }
+        "@typescript-eslint/consistent-type-exports": "error",
+      },
     },
 
     // Node
