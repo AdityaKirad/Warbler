@@ -1,10 +1,12 @@
 import type { Submission } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { redirect } from "@remix-run/react";
-import { generateUniqueId, getExpirationDate } from "~/lib/utils";
-import { db } from "~/services/db.server";
+import { getExpirationDate } from "~/lib/utils";
+import { db } from "~/services/drizzle/index.server";
+import { verifications } from "~/services/drizzle/schema";
 import { verificationSessionStorage } from "~/services/session/verify.server";
 import { generateTOTP, verifyTOTP } from "~/services/totp.server";
+import { and, eq } from "drizzle-orm";
 import type { z } from "zod";
 import { ONBOARDING_SESSION_KEY } from "./onboarding";
 import { handleVerification as handleOnboardingVerification } from "./onboarding.server";
@@ -31,31 +33,28 @@ export async function prepareVerification({
     algorithm: "SHA-256",
     period,
   });
-  const verificationData = {
-    id: generateUniqueId(),
-    type,
-    target,
-    ...verificationConfig,
-    expiresAt: getExpirationDate(),
-  };
-  await db.verification.upsert({
-    where: { target_type: { target, type } },
-    create: verificationData,
-    update: verificationData,
-  });
+  const expiresAt = getExpirationDate();
+  await db
+    .insert(verifications)
+    .values({ target, type, expiresAt, ...verificationConfig })
+    .onConflictDoUpdate({
+      target: [verifications.target, verifications.type],
+      set: { expiresAt, ...verificationConfig },
+    });
   const session = await verificationSessionStorage.getSession();
   session.set(targetQueryParam, target);
   session.set(typeQueryParam, type);
   const verificationSession = await verificationSessionStorage.commitSession(session, {
-    expires: verificationData.expiresAt,
+    expires: expiresAt,
   });
-  return { otp, verificationSession, expiresAt: verificationData.expiresAt };
+  return { otp, verificationSession, expiresAt };
 }
 
 export async function isCodeValid({ otp, target, type }: { otp: string; target: string; type: VerificationType }) {
-  const config = await db.verification.findUnique({
-    where: { target_type: { target, type }, AND: { expiresAt: { gt: new Date() } } },
-    select: { algorithm: true, charSet: true, digits: true, period: true, secret: true },
+  const config = await db.query.verifications.findFirst({
+    columns: { createdAt: false, expiresAt: false, target: false, type: false },
+    where: (verification, { and, eq, gt }) =>
+      and(gt(verification.expiresAt, new Date()), eq(verification.target, target), eq(verification.type, type)),
   });
   if (!config) return false;
   const isValid = await verifyTOTP({ otp, ...config });
@@ -96,16 +95,8 @@ export async function validateRequest({
     return submission.reply({ formErrors: ["Invalid code"] });
   }
 
-  async function deleteVerification() {
-    await db.verification.delete({
-      where: {
-        target_type: {
-          target,
-          type,
-        },
-      },
-    });
-  }
+  const deleteVerification = () =>
+    db.delete(verifications).where(and(eq(verifications.target, target), eq(verifications.type, type)));
 
   switch (type) {
     case "onboarding":

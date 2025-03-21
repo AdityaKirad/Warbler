@@ -1,4 +1,4 @@
-import type { LinksFunction, MetaFunction } from "@remix-run/node";
+import type { LinksFunction, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import {
   isRouteErrorResponse,
   Links,
@@ -10,10 +10,9 @@ import {
   useRouteError,
 } from "@remix-run/react";
 import "./tailwind.css";
-import type { LoaderFunctionArgs } from "@remix-run/node";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { getUserId } from "./services/authenticator.server";
-import { db } from "./services/db.server";
+import { db } from "./services/drizzle/index.server";
 import { honeypot } from "./services/honeypot.server";
 
 export const meta: MetaFunction = () => [
@@ -53,11 +52,9 @@ export const links: LinksFunction = () => [
 export async function loader({ request }: LoaderFunctionArgs) {
   const id = await getUserId(request);
   const user = id
-    ? await db.user.findUnique({
-        where: {
-          id: id,
-        },
-        select: { id: true, name: true, username: true, image: true },
+    ? await db.query.users.findFirst({
+        columns: { id: true, name: true, username: true, image: true },
+        where: (user, { eq }) => eq(user.id, id),
       })
     : null;
   const honeypotProps = await honeypot.getInputProps();

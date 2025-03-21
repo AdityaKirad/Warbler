@@ -9,7 +9,7 @@ import { Input } from "~/components/ui/input";
 import { Loader } from "~/components/ui/loader";
 import { useIsPending } from "~/hooks/use-is-pending";
 import { IdentifierSchema } from "~/lib/user-validation";
-import { db } from "~/services/db.server";
+import { db } from "~/services/drizzle/index.server";
 import { sendEmail } from "~/services/email.server";
 import { checkHoneyPot } from "~/services/honeypot.server";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
@@ -29,13 +29,9 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const submission = await parseWithZod(formData, {
     schema: schema.superRefine(async ({ identifier }, ctx) => {
-      const doesUserExist = await db.user.findFirst({
-        where: {
-          OR: [{ email: identifier }, { username: identifier }],
-        },
-        select: {
-          id: true,
-        },
+      const doesUserExist = await db.query.users.findFirst({
+        columns: { id: true },
+        where: (user, { eq, or }) => or(eq(user.email, identifier), eq(user.username, identifier)),
       });
       if (!doesUserExist) {
         ctx.addIssue({
@@ -53,15 +49,15 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const { identifier } = submission.value;
 
-  const user = await db.user.findFirstOrThrow({
-    where: {
-      OR: [{ email: identifier }, { username: identifier }],
-    },
-    select: {
-      email: true,
-      username: true,
-    },
-  });
+  const user = await db.query.users
+    .findFirst({
+      columns: { email: true, username: true },
+      where: (user, { eq, or }) => or(eq(user.email, identifier), eq(user.username, identifier)),
+    })
+    .then((res) => {
+      if (!res) throw new Error("User not found");
+      return res;
+    });
 
   const { otp, verificationSession } = await prepareVerification({
     period: 60 * 10,

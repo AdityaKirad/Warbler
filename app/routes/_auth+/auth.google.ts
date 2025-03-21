@@ -1,16 +1,30 @@
-import { redirect } from "@remix-run/node";
 import type { ActionFunctionArgs } from "@remix-run/node";
-import { authenticator } from "~/services/authenticator.server";
+import { redirect } from "@remix-run/node";
+import { getGoogleCodeVerifierCookieHeader } from "~/services/google-code-verifier-cookie.server";
+import { getGoogleOauthStateCookieHeader } from "~/services/google-oauth-state-cookie.server";
+import { google } from "~/services/google-oauth.server";
 import { getRedirectCookieHeader } from "~/services/redirect-cookie.server";
+import { generateCodeVerifier, generateState } from "arctic";
 
 export const loader = () => redirect("/");
 
 export async function action({ request }: ActionFunctionArgs) {
   try {
-    return authenticator.authenticate("google", request);
+    const state = generateState();
+    const codeVerifier = generateCodeVerifier();
+    const url = google.createAuthorizationURL(state, codeVerifier, ["openid", "profile", "email"]);
+
+    const headers = new Headers();
+    headers.append("set-cookie", getGoogleOauthStateCookieHeader(state));
+    headers.append("set-cookie", getGoogleCodeVerifierCookieHeader(codeVerifier));
+
+    throw redirect(url.toString(), {
+      status: 302,
+      headers,
+    });
   } catch (error) {
     if (error instanceof Response) {
-      const formData = await request.formData();
+      const formData = await error.formData();
       const rawRedirectTo = formData.get("redirectTo");
       const redirectTo = typeof rawRedirectTo === "string" ? rawRedirectTo : getReferrerRoute(request);
       const redirectToCookie = getRedirectCookieHeader(redirectTo);

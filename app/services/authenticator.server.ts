@@ -1,46 +1,21 @@
 import cryto from "node:crypto";
-import type { Password, User } from "@prisma/client";
 import { redirect } from "@remix-run/node";
-import { generateUniqueId, getExpirationDate } from "~/lib/utils";
+import { getExpirationDate } from "~/lib/utils";
+import { db } from "~/services/drizzle/index.server";
 import bcrypt from "bcryptjs";
-import { Authenticator } from "remix-auth";
-import { GoogleStrategy } from "remix-auth-google";
-import { db } from "./db.server";
+import { eq } from "drizzle-orm";
+import type { PasswordSelectType, UserInsertType, UserSelectType } from "./drizzle/schema";
+import { passwords, sessions, users } from "./drizzle/schema";
 import { authSessionStorage, getAuthSession } from "./session/auth.server";
-import { oauthProviderSessionStorage } from "./session/oauth-provider.server";
 
 export const SESSION_EXPIRATION_TIME = getExpirationDate(7 * 24 * 60 * 60);
-
-export const authenticator = new Authenticator<{
-  name: string;
-  email: string;
-  image: string;
-}>(oauthProviderSessionStorage);
-
-const googleStrategy = new GoogleStrategy(
-  {
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: `${process.env.URL}/auth/google/callback`,
-    prompt: "consent",
-  },
-  async ({ profile }) => {
-    return {
-      name: [profile.name.givenName, profile.name.middleName, profile.name.familyName].filter(Boolean).join(" "),
-      email: profile.emails[0].value,
-      image: profile.photos[0].value,
-    };
-  },
-);
-
-authenticator.use(googleStrategy);
 
 export async function getUserId(request: Request, { redirectTo }: { redirectTo?: string | null } = {}) {
   const { session: authSession, sessionId } = await getAuthSession(request);
   if (!sessionId) return null;
-  const session = await db.session.findUnique({
-    where: { id: sessionId, expiresAt: { gt: new Date() } },
-    select: { userId: true },
+  const session = await db.query.sessions.findFirst({
+    columns: { userId: true },
+    where: (session, { and, eq, gt }) => and(eq(session.id, sessionId), gt(session.expiresAt, new Date())),
   });
   if (!session?.userId) {
     const loginRedirect = getLoginRedirectURI(request, { redirectTo });
@@ -73,31 +48,30 @@ export async function login({
   identifier,
   password,
 }: {
-  identifier: User["username"] | User["email"];
-  password: Password["hash"];
+  identifier: UserSelectType["username"] | UserSelectType["email"];
+  password: PasswordSelectType["hash"];
 }) {
   const user = await verifyUserWithPassword({ identifier, password });
 
   if (!user) return null;
 
-  return db.session.create({
-    data: {
-      id: generateUniqueId(),
+  return db
+    .insert(sessions)
+    .values({
       userId: user.id,
       expiresAt: SESSION_EXPIRATION_TIME,
-    },
-    select: { id: true, expiresAt: true },
-  });
+    })
+    .returning({ id: sessions.userId, expiresAt: sessions.expiresAt })
+    .then((res) => res[0]);
 }
 
 export async function logout(request: Request) {
   const { session, sessionId } = await getAuthSession(request);
 
   if (sessionId) {
-    void db.session
-      .deleteMany({
-        where: { id: sessionId },
-      })
+    void db
+      .delete(sessions)
+      .where(eq(sessions.id, sessionId))
       .catch(() => {});
   }
 
@@ -111,24 +85,18 @@ export async function logout(request: Request) {
 export async function signup({
   password,
   ...profile
-}: Pick<User, "name" | "username" | "dob" | "email" | "image"> & { password: string }) {
-  return db.session.create({
-    data: {
-      id: generateUniqueId(),
-      expiresAt: SESSION_EXPIRATION_TIME,
-      user: {
-        create: {
-          id: generateUniqueId(),
-          ...profile,
-          password: {
-            create: {
-              hash: await getPasswordHash(password),
-            },
-          },
-        },
-      },
-    },
-    select: { id: true, expiresAt: true },
+}: Pick<UserInsertType, "name" | "username" | "dob" | "email" | "image"> & { password: string }) {
+  return db.transaction(async (tx) => {
+    const [user] = await tx.insert(users).values(profile).returning({ id: users.id });
+    console.log("user query successfull");
+    await tx.insert(passwords).values({ hash: await getPasswordHash(password), userId: user.id });
+    console.log("password query successfull");
+    const [session] = await tx
+      .insert(sessions)
+      .values({ userId: user.id, expiresAt: SESSION_EXPIRATION_TIME })
+      .returning({ id: sessions.id, expiresAt: sessions.expiresAt });
+    console.log("session query successfull");
+    return session;
   });
 }
 
@@ -142,12 +110,21 @@ function getLoginRedirectURI(request: Request, { redirectTo }: { redirectTo?: st
 
 const getPasswordHash = (password: string) => bcrypt.hash(password, 10);
 
-async function verifyUserWithPassword({ identifier, password }: { identifier: string; password: Password["hash"] }) {
-  const userWithPassword = await db.user.findFirst({
-    where: {
-      OR: [{ email: identifier }, { username: identifier }],
+async function verifyUserWithPassword({
+  identifier,
+  password,
+}: {
+  identifier: string;
+  password: PasswordSelectType["hash"];
+}) {
+  const userWithPassword = await db.query.users.findFirst({
+    columns: { id: true },
+    where: (user, { eq, or }) => or(eq(user.email, identifier), eq(user.username, identifier)),
+    with: {
+      password: {
+        columns: { hash: true },
+      },
     },
-    select: { id: true, password: { select: { hash: true } } },
   });
 
   if (!userWithPassword || !userWithPassword.password) {
@@ -164,18 +141,11 @@ async function verifyUserWithPassword({ identifier, password }: { identifier: st
 }
 
 export async function resetPassword({ email, password }: { email: string; password: string }) {
-  const hash = await getPasswordHash(password);
-  return db.user.update({
-    where: { email },
-    data: {
-      password: {
-        upsert: {
-          create: { hash },
-          update: { hash },
-        },
-      },
-    },
-  });
+  return db
+    .update(passwords)
+    .set({ hash: await getPasswordHash(password) })
+    .from(users)
+    .where(eq(users.email, email));
 }
 
 export async function checkCommonPassword(password: string) {

@@ -1,44 +1,81 @@
+import { ObjectParser } from "@pilcrowjs/object-parser";
 import { redirect, type LoaderFunctionArgs } from "@remix-run/node";
-import { generateUniqueId } from "~/lib/utils";
-import { authenticator, SESSION_EXPIRATION_TIME } from "~/services/authenticator.server";
-import { db } from "~/services/db.server";
+import { SESSION_EXPIRATION_TIME } from "~/services/authenticator.server";
+import { db } from "~/services/drizzle/index.server";
+import { sessions } from "~/services/drizzle/schema";
+import { getGoogleCodeVerifierCookieValue } from "~/services/google-code-verifier-cookie.server";
+import { getGoogleOauthStateCookieValue } from "~/services/google-oauth-state-cookie.server";
+import { google } from "~/services/google-oauth.server";
 import { destroyRedirectToHeader, getRedirectCookieValue } from "~/services/redirect-cookie.server";
 import { onboardingSessionStorage } from "~/services/session/onboarding.server";
 import { verificationSessionStorage } from "~/services/session/verify.server";
+import type { OAuth2Tokens } from "arctic";
+import { decodeIdToken } from "arctic";
 import { handleNewSession } from "./login.server";
 import { ONBOARDING_SESSION_KEY } from "./onboarding";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const redirectTo = getRedirectCookieValue(request);
 
-  const authResult = await authenticator.authenticate("google", request, { throwOnError: true }).then(
-    (data) => ({ success: true, data }) as const,
-    (error) => ({ success: false, error }) as const,
-  );
+  const url = new URL(request.url);
+  const code = url.searchParams.get("code");
+  const state = url.searchParams.get("state");
+  const storedState = getGoogleOauthStateCookieValue(request);
+  const codeVerifier = getGoogleCodeVerifierCookieValue(request);
 
-  if (!authResult.success) {
-    console.error(authResult.error);
-    throw redirect("/login", { headers: { "set-cookie": destroyRedirectToHeader } });
+  if (code === null || state === null || storedState === null || codeVerifier === null) {
+    return new Response("Please restart the process", {
+      status: 400,
+      headers: {
+        "set-cookie": destroyRedirectToHeader,
+      },
+    });
   }
 
-  const { data: profile } = authResult;
+  if (state !== storedState) {
+    return new Response("Please restart the process", {
+      status: 400,
+      headers: {
+        "set-cookie": destroyRedirectToHeader,
+      },
+    });
+  }
 
-  const existingUser = await db.user.findUnique({
-    where: {
-      email: profile.email.toLowerCase(),
-    },
-    select: { id: true },
+  let tokens: OAuth2Tokens;
+
+  try {
+    tokens = await google.validateAuthorizationCode(code, codeVerifier);
+  } catch (error) {
+    return new Response("Please restart the process", {
+      status: 400,
+      headers: {
+        "set-cookie": destroyRedirectToHeader,
+      },
+    });
+  }
+
+  const claims = decodeIdToken(tokens.idToken());
+  const claimsParser = new ObjectParser(claims);
+
+  const profile = {
+    name: claimsParser.getString("name"),
+    picture: claimsParser.getString("picture"),
+    email: claimsParser.getString("email"),
+  };
+
+  const existingUser = await db.query.users.findFirst({
+    columns: { id: true },
+    where: (user, { eq }) => eq(user.email, profile.email.toLowerCase()),
   });
 
   if (existingUser) {
-    const session = await db.session.create({
-      data: {
-        id: generateUniqueId(),
+    const [session] = await db
+      .insert(sessions)
+      .values({
         userId: existingUser.id,
         expiresAt: SESSION_EXPIRATION_TIME,
-      },
-      select: { id: true, expiresAt: true },
-    });
+      })
+      .returning({ id: sessions.id, expiresAt: sessions.expiresAt });
     return handleNewSession({ session });
   }
 

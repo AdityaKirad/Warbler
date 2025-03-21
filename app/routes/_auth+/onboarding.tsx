@@ -11,7 +11,7 @@ import { Loader } from "~/components/ui/loader";
 import { useIsPending } from "~/hooks/use-is-pending";
 import { PasswordAndConfirmPasswordSchema, UsernameSchema } from "~/lib/user-validation";
 import { checkCommonPassword, signup } from "~/services/authenticator.server";
-import { db } from "~/services/db.server";
+import { db } from "~/services/drizzle/index.server";
 import { checkHoneyPot } from "~/services/honeypot.server";
 import { authSessionStorage, sessionKey } from "~/services/session/auth.server";
 import {
@@ -51,7 +51,10 @@ export async function action({ request }: ActionFunctionArgs) {
     schema: (intent) =>
       schema
         .superRefine(async ({ username, password }, ctx) => {
-          const isTaken = await db.user.findUnique({ where: { username } });
+          const isTaken = await db.query.users.findFirst({
+            columns: { id: true },
+            where: (user, { eq }) => eq(user.username, username),
+          });
           if (isTaken) {
             ctx.addIssue({
               code: "custom",

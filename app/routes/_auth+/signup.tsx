@@ -13,7 +13,7 @@ import { Loader } from "~/components/ui/loader";
 import { useIsPending } from "~/hooks/use-is-pending";
 import { DOBSchema, EmailSchema, NameSchema } from "~/lib/user-validation";
 import { requireAnonymous } from "~/services/authenticator.server";
-import { db } from "~/services/db.server";
+import { db } from "~/services/drizzle/index.server";
 import { sendEmail } from "~/services/email.server";
 import { checkHoneyPot } from "~/services/honeypot.server";
 import { createOnboardingUser } from "~/services/session/onboarding.server";
@@ -44,7 +44,10 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const submission = await parseWithZod(formData, {
     schema: schema.superRefine(async ({ email }, ctx) => {
-      const emailTaken = await db.user.findUnique({ where: { email } });
+      const emailTaken = await db.query.users.findFirst({
+        columns: { id: true },
+        where: (user, { eq }) => eq(user.email, email),
+      });
       if (emailTaken) {
         ctx.addIssue({
           path: ["email"],
