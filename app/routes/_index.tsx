@@ -1,7 +1,7 @@
-import type { LoaderFunctionArgs } from "@remix-run/node";
-import { requireAnonymous } from "~/services/authenticator.server";
+import { requireAnonymous } from "~/.server/authenticator";
+import type { Route } from "./+types/_index";
 
-export { default } from "~/components/auth-page";
+export { default } from "~/components/auth-homepage";
 
 export const meta = () => [
   {
@@ -9,7 +9,7 @@ export const meta = () => [
   },
 ];
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   await requireAnonymous(request);
   return null;
 }

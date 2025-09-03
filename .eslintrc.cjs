@@ -70,7 +70,11 @@ module.exports = {
           },
         },
       },
-      extends: ["plugin:@typescript-eslint/recommended", "plugin:import/recommended", "plugin:import/typescript"],
+      extends: [
+        "plugin:@typescript-eslint/recommended",
+        "plugin:import/recommended",
+        "plugin:import/typescript",
+      ],
       rules: {
         "@typescript-eslint/no-unused-vars": [
           "warn",
@@ -81,7 +85,11 @@ module.exports = {
         ],
         "@typescript-eslint/consistent-type-imports": [
           "error",
-          { disallowTypeAnnotations: true, fixStyle: "separate-type-imports", prefer: "type-imports" },
+          {
+            disallowTypeAnnotations: true,
+            fixStyle: "separate-type-imports",
+            prefer: "type-imports",
+          },
         ],
         "@typescript-eslint/consistent-type-exports": "error",
       },

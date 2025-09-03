@@ -1,4 +1,3 @@
-import type { LinksFunction, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import {
   isRouteErrorResponse,
   Links,
@@ -6,23 +5,23 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useLoaderData,
   useRouteError,
-} from "@remix-run/react";
+} from "react-router";
 import "./tailwind.css";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
-import { getUserId } from "./services/authenticator.server";
-import { db } from "./services/drizzle/index.server";
-import { honeypot } from "./services/honeypot.server";
+import { honeypot } from "./.server/honeypot";
+import type { Route } from "./+types/root";
 
-export const meta: MetaFunction = () => [
+export const meta: Route.MetaFunction = () => [
+  { charSet: "utf-8" },
+  { name: "viewport", content: "width=device-width, initial-scale=1" },
   {
     name: "apple-mobile-web-app-title",
     content: "Warbler",
   },
 ];
 
-export const links: LinksFunction = () => [
+export const links: Route.LinksFunction = () => [
   {
     rel: "icon",
     type: "image/png",
@@ -49,24 +48,12 @@ export const links: LinksFunction = () => [
   },
 ];
 
-export async function loader({ request }: LoaderFunctionArgs) {
-  const id = await getUserId(request);
-  const user = id
-    ? await db.query.users.findFirst({
-        columns: { id: true, name: true, username: true, image: true },
-        where: (user, { eq }) => eq(user.id, id),
-      })
-    : null;
-  const honeypotProps = await honeypot.getInputProps();
-  return { honeypotProps, user };
-}
+export const loader = () => honeypot.getInputProps();
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
@@ -79,11 +66,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
-  const { honeypotProps } = useLoaderData<typeof loader>();
-
+export default function App({ loaderData }: Route.ComponentProps) {
   return (
-    <HoneypotProvider {...honeypotProps}>
+    <HoneypotProvider {...loaderData}>
       <Outlet />
     </HoneypotProvider>
   );

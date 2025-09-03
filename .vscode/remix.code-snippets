@@ -1,49 +1,49 @@
 {
-	"loader": {
-		"prefix": "/loader",
-		"scope": "typescript,typescriptreact",
-		"body": [
-			"import type { LoaderFunctionArgs } from '@remix-run/node'",
-			"",
-			"export async function loader({request}: LoaderFunctionArgs) {",
-			"   return {}",
-			"}"
-		]
-	},
+  "loader": {
+    "prefix": "/loader",
+    "scope": "typescript,typescriptreact",
+    "body": [
+      "import type { Route } from \"./+types/${TM_FILENAME_BASE}.ts\"",
+      "",
+      "export async function loader({request}: Route.LoaderArgs) {",
+      "   return {}",
+      "}",
+    ],
+  },
 
-	"action": {
-		"prefix": "/action",
-		"scope": "typescript,typescriptreact",
-		"body": [
-			"import type { ActionFunctionArgs } from '@remix-run/node'",
-			"",
-			"export async function action({request}: ActionFunctionArgs) {",
-			"   return {}",
-			"}"
-		]
-	},
+  "action": {
+    "prefix": "/action",
+    "scope": "typescript,typescriptreact",
+    "body": [
+      "import type { Route } from \"./+types/${TM_FILENAME_BASE}.ts\"",
+      "",
+      "export async function action({request}: Route.ActionArgs) {",
+      "   return {}",
+      "}",
+    ],
+  },
 
-	"page": {
-		"prefix": "/page",
-		"scope": "typescriptreact",
-		"body": [
-			"export default function Page() {",
-			"   return (",
-			"     <div>New Page</div>",
-			"   )",
-			"}"
-		]
-	},
+  "page": {
+    "prefix": "/page",
+    "scope": "typescriptreact",
+    "body": [
+      "export default function Page() {",
+      "   return (",
+      "     <div>New Page</div>",
+      "   )",
+      "}",
+    ],
+  },
 
-	"layout": {
-		"prefix": "/layout",
-		"scope": "typescriptreact",
-		"body": [
-			"export default function Layout() {",
-			"   return (",
-			"     <div>Route Layout</div>",
-			"   )",
-			"}"
-		]
-	}
+  "layout": {
+    "prefix": "/layout",
+    "scope": "typescriptreact",
+    "body": [
+      "export default function Layout() {",
+      "   return (",
+      "     <div>Route Layout</div>",
+      "   )",
+      "}",
+    ],
+  },
 }

@@ -1,13 +1,16 @@
 import { z } from "zod";
 
 const zodEnv = z.object({
+  AUTH_SECRET: z.string().length(44),
   DATABASE_URL: z.string().url(),
   DATABASE_AUTH_TOKEN: z.string().optional(),
+  DISCORD_CLIENT_ID: z.string(),
+  DISCORD_CLIENT_SECRET: z.string(),
   GOOGLE_CLIENT_ID: z.string(),
   GOOGLE_CLIENT_SECRET: z.string(),
   HONEYPOT_SEED: z.string().length(44),
-  SESSION_SECRET: z.string().length(44),
   PLUNK_API_KEY: z.string(),
+  URL: z.string().url(),
 });
 
 try {
@@ -23,8 +26,11 @@ try {
   }
 }
 
+type ZodEnv = z.infer<typeof zodEnv>;
+
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace NodeJS {
-    interface ProcessEnv extends z.infer<typeof zodEnv> {}
+    interface ProcessEnv extends ZodEnv {}
   }
 }

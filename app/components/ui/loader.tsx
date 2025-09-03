@@ -1,4 +1,5 @@
-import { cva, type VariantProps } from "class-variance-authority";
+import type { VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 
 const loaderVariants = cva("loading", {
   variants: {
@@ -16,5 +17,10 @@ const loaderVariants = cva("loading", {
 });
 
 export function Loader({ variant, size }: VariantProps<typeof loaderVariants>) {
-  return <span className={loaderVariants({ size, variant })} />;
+  return (
+    <span
+      data-slot="loading-spinner"
+      className={loaderVariants({ size, variant })}
+    />
+  );
 }
