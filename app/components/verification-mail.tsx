@@ -10,16 +10,16 @@ import {
   Tailwind,
   Text,
 } from "@react-email/components";
-import type { VerificationType } from "~/.server/authenticator";
 
-type MailProps =
-  | { type: "signup"; code: string }
-  | { type: "forget-password"; code: string; username: string }
-  | { type: "verify-email"; code: string; username: string };
+type MailProps = { code: string } & (
+  | { type: "signup" }
+  | { type: "password-reset"; username: string }
+  | { type: "verify-email"; username: string }
+);
 
-const preview: Record<VerificationType, string> = {
+const preview: Record<MailProps["type"], string> = {
   signup: "Confirm your email address",
-  "forget-password": "Reset your password",
+  "password-reset": "Reset your password",
   "verify-email": "Verify your email address",
 };
 
@@ -43,7 +43,7 @@ export function VerificationMail(props: Readonly<MailProps>) {
             </Section>
             {props.type === "signup" ? (
               <SignupMail code={props.code} />
-            ) : props.type === "forget-password" ? (
+            ) : props.type === "password-reset" ? (
               <ResetPasswordMail code={props.code} username={props.username} />
             ) : props.type === "verify-email" ? (
               <VerifyEmailMail code={props.code} username={props.username} />

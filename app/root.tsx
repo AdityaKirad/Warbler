@@ -10,6 +10,7 @@ import {
 import "./tailwind.css";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "./.server/honeypot";
+import { getUser } from "./.server/utils";
 import type { Route } from "./+types/root";
 
 export const meta: Route.MetaFunction = () => [
@@ -48,7 +49,14 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
-export const loader = () => honeypot.getInputProps();
+export async function loader({ request }: Route.LoaderArgs) {
+  const user = await getUser(request);
+  const honeypotProps = await honeypot.getInputProps();
+  return {
+    user,
+    honeypotProps,
+  };
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -68,8 +76,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App({ loaderData }: Route.ComponentProps) {
   return (
-    <HoneypotProvider {...loaderData}>
-      <Outlet />
+    <HoneypotProvider {...loaderData.honeypotProps}>
+      <Outlet context={loaderData.user} />
     </HoneypotProvider>
   );
 }

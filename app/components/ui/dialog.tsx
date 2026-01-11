@@ -1,6 +1,10 @@
-import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { cn } from "~/lib/utils";
+import { XIcon } from "lucide-react";
+import { Dialog as DialogPrimitive } from "radix-ui";
 import { forwardRef } from "react";
+
+const dialogContentClassName =
+  "bg-background fixed inset-0 z-50 m-auto flex size-full flex-col gap-4 px-16 py-2 shadow-lg duration-200 sm:max-h-(--container-xl) sm:max-w-lg sm:rounded-lg sm:border";
 
 const Dialog = DialogPrimitive.Root;
 
@@ -18,10 +22,11 @@ const DialogOverlay = forwardRef<
 >(({ animate = true, className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     className={cn(
-      "fixed inset-0 z-50 bg-black/80",
-      animate
-        ? "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=open]:animate-in"
-        : "",
+      {
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0":
+          animate,
+      },
+      "fixed inset-0 z-50 bg-black/50",
       className,
     )}
     ref={ref}
@@ -33,25 +38,51 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 const DialogContent = forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
-    animate: boolean;
+    animate?: boolean;
+    showCloseButton?: boolean;
+    closeButtonClassName?: string;
   }
->(({ animate = true, className, children, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay animate={animate} />
-    <DialogPrimitive.Content
-      className={cn(
-        "bg-background fixed top-[50%] left-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border p-6 shadow-lg duration-200 sm:rounded-lg",
-        animate
-          ? "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] data-[state=closed]:animate-out data-[state=open]:animate-in"
-          : "",
-        className,
-      )}
-      ref={ref}
-      {...props}>
-      {children}
-    </DialogPrimitive.Content>
-  </DialogPortal>
-));
+>(
+  (
+    {
+      animate = true,
+      showCloseButton = true,
+      closeButtonClassName,
+      className,
+      children,
+      ...props
+    },
+    ref,
+  ) => (
+    <DialogPortal>
+      <DialogOverlay animate={animate} />
+      <DialogPrimitive.Content
+        className={cn(
+          {
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95":
+              animate,
+          },
+          dialogContentClassName,
+          className,
+        )}
+        ref={ref}
+        {...props}>
+        {children}
+        {showCloseButton && (
+          <DialogPrimitive.Close
+            data-slot="dialog-close"
+            className={cn(
+              "ring-offset-background focus:ring-ring hover:bg-accent absolute top-2 left-2 inline-flex size-10 items-center justify-center rounded-full transition-colors focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+              closeButtonClassName,
+            )}>
+            <XIcon />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
+        )}
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  ),
+);
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = ({
@@ -88,7 +119,7 @@ const DialogTitle = forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     className={cn(
-      "text-lg leading-none font-semibold tracking-tight",
+      "text-heading leading-none font-semibold tracking-tight",
       className,
     )}
     ref={ref}
@@ -120,4 +151,5 @@ export {
   DialogFooter,
   DialogTitle,
   DialogDescription,
+  dialogContentClassName,
 };

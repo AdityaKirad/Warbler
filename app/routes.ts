@@ -6,7 +6,7 @@ export default remixRoutesOptionAdapter((defineRoutes) =>
     ignoredRouteFiles: [
       ".*",
       "**/*.css",
-      "**/__*.*",
+      "**/+*.*",
       "**/*.server.*",
       "**/*.client.*",
     ],

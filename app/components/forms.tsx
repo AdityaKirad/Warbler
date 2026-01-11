@@ -102,13 +102,13 @@ export function OTPField({
         maxLength={6}
         pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
         {...inputProps}>
-        <InputOTPGroup className="flex-1 [&>*]:flex-1">
+        <InputOTPGroup className="flex-1 *:flex-1">
           <InputOTPSlot index={0} />
           <InputOTPSlot index={1} />
           <InputOTPSlot index={2} />
         </InputOTPGroup>
         <InputOTPSeparator />
-        <InputOTPGroup className="flex-1 [&>*]:flex-1">
+        <InputOTPGroup className="flex-1 *:flex-1">
           <InputOTPSlot index={3} />
           <InputOTPSlot index={4} />
           <InputOTPSlot index={5} />

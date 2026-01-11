@@ -2,22 +2,22 @@ import { createId as cuid } from "@paralleldrive/cuid2";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { relations, sql } from "drizzle-orm";
 import {
-  customType,
   index,
   integer,
-  primaryKey,
   sqliteTable,
   text,
+  uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
-const dateTime = customType<{ data: Date; driverData: string }>({
-  dataType() {
-    return "DATETIME";
-  },
-  fromDriver(value): Date {
-    return new Date(value);
-  },
-});
+const timestamps = {
+  createdAt: integer({ mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+  updatedAt: integer({ mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  expiresAt: integer({ mode: "timestamp_ms" }).notNull(),
+};
 
 export const user = sqliteTable("user", {
   id: text()
@@ -28,14 +28,15 @@ export const user = sqliteTable("user", {
   username: text().notNull().unique(),
   email: text().notNull().unique(),
   emailVerified: integer({ mode: "boolean" }).notNull(),
-  dob: dateTime().notNull(),
+  dob: integer({ mode: "timestamp_ms" }),
   image: text(),
-  createdAt: dateTime("created_at")
+  profileVerified: integer({ mode: "boolean" }).notNull().default(false),
+  onboardingStepsCompleted: text({ mode: "json" })
+    .$type<string[]>()
     .notNull()
-    .default(sql`(CURRENT_TIMESTAMP)`),
-  updatedAt: dateTime("updated_at")
-    .notNull()
-    .$defaultFn(() => new Date()),
+    .default([]),
+  createdAt: timestamps.createdAt,
+  updatedAt: timestamps.updatedAt,
 });
 
 export const account = sqliteTable(
@@ -45,39 +46,33 @@ export const account = sqliteTable(
       .notNull()
       .primaryKey()
       .$defaultFn(() => cuid()),
-    userId: text("user_id")
+    userId: text()
       .notNull()
       .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
-    providerId: text("provider_id").notNull().unique(),
-    provider: text({ enum: ["credentials", "discord", "google"] }).notNull(),
-    password: text().unique(),
-    createdAt: dateTime("created_at")
-      .notNull()
-      .default(sql`(CURRENT_TIMESTAMP)`),
-    updatedAt: dateTime("updated_at")
-      .notNull()
-      .$defaultFn(() => new Date()),
-  },
-  (table) => [index("account_userId_idx").on(table.userId)],
-);
-
-export const verification = sqliteTable(
-  "verification",
-  {
-    target: text().notNull(),
-    type: text({
-      enum: ["forget-password", "signup", "verify-email"],
-    }).notNull(),
-    hash: text().notNull().unique(),
-    expiresAt: dateTime("expires_at").notNull(),
+    provider: text().notNull(),
+    providerId: text().notNull(),
+    password: text(),
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
   },
   (table) => [
-    primaryKey({
-      name: "verification_target_type_pkey",
-      columns: [table.target, table.type],
-    }),
+    index("account_user_id_idx").on(table.userId),
+    uniqueIndex("account_provider_provider_id_unique_idx").on(
+      table.provider,
+      table.providerId,
+    ),
   ],
 );
+
+export const verification = sqliteTable("verification", {
+  id: text()
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => cuid()),
+  identifier: text().notNull().unique(),
+  value: text().notNull(),
+  ...timestamps,
+});
 
 export const session = sqliteTable(
   "session",
@@ -86,21 +81,16 @@ export const session = sqliteTable(
       .notNull()
       .primaryKey()
       .$defaultFn(() => cuid()),
-    userId: text("user_id")
+    userId: text()
       .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+      .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
     token: text().notNull().unique(),
-    userAgent: text("user_agent"),
-    ipAddress: text("ip_address"),
-    createdAt: dateTime("created_at")
-      .notNull()
-      .default(sql`(CURRENT_TIMESTAMP)`),
-    updatedAt: dateTime("updated_at")
-      .notNull()
-      .$defaultFn(() => new Date()),
-    expiresAt: dateTime("expires_at").notNull(),
+    userAgent: text(),
+    ipAddress: text(),
+    location: text(),
+    ...timestamps,
   },
-  (table) => [index("session_userId_idx").on(table.userId)],
+  (table) => [index("session_user_id_idx").on(table.userId)],
 );
 
 export const userRelations = relations(user, ({ many }) => ({

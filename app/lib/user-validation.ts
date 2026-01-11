@@ -1,10 +1,6 @@
 import { differenceInYears } from "date-fns";
 import { z } from "zod";
 
-const USERNAME_REGEX = /^[a-zA-Z][a-zA-Z0-9_]*$/;
-const USERNAME_MIN_LENGTH = 3;
-const USERNAME_MAX_LENGTH = 15;
-
 export const NameSchema = z
   .string()
   .trim()
@@ -13,23 +9,22 @@ export const NameSchema = z
 
 export const UsernameSchema = z
   .string()
-  .min(USERNAME_MIN_LENGTH, { message: "username too short" })
-  .max(USERNAME_MAX_LENGTH, { message: "username too long" })
-  .regex(USERNAME_REGEX, {
+  .min(4, { message: "username too short" })
+  .max(15, { message: "username too long" })
+  .regex(/^[a-zA-Z0-9][a-zA-Z0-9_]*$/, {
     message:
-      "Must start with letter, only letter, number & underscores allowed",
+      "Must start with letter or number, only letters, numbers & underscores allowed",
+  })
+  .refine((val) => !/^\d+$/.test(val), {
+    message: "Username cannot be purely numbers",
   })
   .refine(
     (val) => {
-      const username = val.toLowerCase();
-      return !(
-        username.includes("Warbler") ||
-        username.includes("admin") ||
-        username.endsWith("com")
-      );
+      const lower = val.toLowerCase();
+      return !lower.includes("warbler") && !lower.includes("admin");
     },
     {
-      message: "username can't contain 'Warbler' or 'admin' or end with 'com'",
+      message: "Username cannot contain 'warbler' or 'admin'",
     },
   );
 
@@ -40,7 +35,9 @@ export const EmailSchema = z
   .max(100, { message: "Email too long" })
   .toLowerCase();
 
-export const IdentifierSchema = z.union([EmailSchema, UsernameSchema]);
+export const IdentifierSchema = z.object({
+  identifier: z.union([EmailSchema, UsernameSchema]),
+});
 
 export const DOBSchema = z
   .date()
@@ -48,34 +45,35 @@ export const DOBSchema = z
     message: "You must be atleast 13 years old",
   });
 
-export const PasswordSchema = z
-  .string()
-  .min(8, { message: "Password too short" })
-  .regex(/[A-Z]/, {
-    message: "Password must contain at least one uppercase letter",
-  })
-  .regex(/[a-z]/, {
-    message: "Password must contain at least one lowercase letter",
-  })
-  .regex(/[0-9]/, { message: "Password must contain at least one number" })
-  .regex(/[^A-Za-z0-9]/, {
-    message: "Password must contain at least one special character",
-  })
-  .refine((val) => new TextEncoder().encode(val).length <= 72, {
-    message: "Password too long",
-  });
+export const PasswordSchema = z.object({
+  password: z
+    .string()
+    .min(8, { message: "Password too short" })
+    .regex(/[A-Z]/, {
+      message: "Password must contain at least one uppercase letter",
+    })
+    .regex(/[a-z]/, {
+      message: "Password must contain at least one lowercase letter",
+    })
+    .regex(/[0-9]/, { message: "Password must contain at least one number" })
+    .regex(/[^A-Za-z0-9]/, {
+      message: "Password must contain at least one special character",
+    }),
+});
 
-export const PasswordAndConfirmPasswordSchema = z
-  .object({
-    password: PasswordSchema,
-    confirmPassword: z.string(),
-  })
-  .superRefine(({ password, confirmPassword }, ctx) => {
-    if (password !== confirmPassword) {
-      ctx.addIssue({
-        path: ["confirmPassword"],
-        code: "custom",
-        message: "Password's don't match",
-      });
-    }
-  });
+export const PasswordAndConfirmPasswordSchema = PasswordSchema.extend({
+  confirmPassword: z.string(),
+}).superRefine(({ password, confirmPassword }, ctx) => {
+  if (password !== confirmPassword) {
+    ctx.addIssue({
+      path: ["confirmPassword"],
+      code: "custom",
+      message: "Password's don't match",
+    });
+  }
+});
+
+export type IdentifierSchemaType = z.infer<typeof IdentifierSchema>;
+export type PasswordAndConfirmPasswordSchemaType = z.infer<
+  typeof PasswordAndConfirmPasswordSchema
+>;

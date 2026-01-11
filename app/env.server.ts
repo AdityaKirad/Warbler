@@ -2,6 +2,9 @@ import { z } from "zod";
 
 const zodEnv = z.object({
   AUTH_SECRET: z.string().length(44),
+  CLOUDINARY_API_KEY: z.string(),
+  CLOUDINARY_API_SECRET: z.string(),
+  CLOUDINARY_CLOUD_NAME: z.string(),
   DATABASE_URL: z.string().url(),
   DATABASE_AUTH_TOKEN: z.string().optional(),
   DISCORD_CLIENT_ID: z.string(),
@@ -9,6 +12,7 @@ const zodEnv = z.object({
   GOOGLE_CLIENT_ID: z.string(),
   GOOGLE_CLIENT_SECRET: z.string(),
   HONEYPOT_SEED: z.string().length(44),
+  NODE_ENV: z.enum(["development", "production", "test"]),
   PLUNK_API_KEY: z.string(),
   URL: z.string().url(),
 });

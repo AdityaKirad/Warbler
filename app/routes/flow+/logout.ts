@@ -1,15 +1,11 @@
+import { sessionCookie } from "~/.server/cookies/session";
 import { db, session } from "~/.server/drizzle";
-import { authSessionStorage } from "~/.server/session/auth-session";
 import { eq } from "drizzle-orm";
 import { redirect } from "react-router";
 import type { Route } from "./+types/logout";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
-  const authSession = await authSessionStorage.getSession(
-    request.headers.get("cookie"),
-  );
-
-  const token = authSession.get("token");
+  const token = await sessionCookie.parse(request.headers.get("cookie"));
 
   if (token) {
     db.delete(session)
@@ -27,7 +23,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
   throw redirect(redirectURL, {
     headers: {
-      "set-cookie": await authSessionStorage.destroySession(authSession),
+      "set-cookie": await sessionCookie.serialize(null, { maxAge: -1 }),
     },
   });
 };
