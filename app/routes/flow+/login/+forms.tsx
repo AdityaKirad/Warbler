@@ -62,10 +62,11 @@ export function CredentialLogin() {
         </Button>
 
         <p className="text-muted-foreground my-4 text-sm">
-          Don&apos;t have an account?{" "}
+          Don't have an account?{" "}
           <Link
+            className="text-blue-500 hover:underline focus-visible:underline"
             to="/flow/signup"
-            className="text-blue-500 hover:underline focus-visible:underline">
+            aria-label="Sign up">
             Sign up
           </Link>
         </p>
@@ -122,12 +123,14 @@ export function GetLoginVariant({ redirectTo }: { redirectTo: string | null }) {
         </Form>
 
         <Button className="rounded-full" variant="outline" asChild>
-          <Link to="/flow/password-reset">Forgot Password?</Link>
+          <Link to="/flow/password-reset" aria-label="Forget Password">
+            Forgot Password?
+          </Link>
         </Button>
       </div>
 
       <p className="text-neutral-700">
-        Don&apos;t have an account?
+        Don't have an account?
         <Button asChild className="text-blue-500" variant="link">
           <Link
             to={{
@@ -135,7 +138,8 @@ export function GetLoginVariant({ redirectTo }: { redirectTo: string | null }) {
               search: redirectTo
                 ? `?redirectTo=${encodeURIComponent(redirectTo)}`
                 : "",
-            }}>
+            }}
+            aria-label="Sign up">
             Sign up
           </Link>
         </Button>

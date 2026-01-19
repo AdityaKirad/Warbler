@@ -60,10 +60,9 @@ function SignupMail({ code }: { code: string }) {
     <>
       <Heading>Confirm your email address</Heading>
       <Text className="text-lg">
-        There&apos;s one quick step you need to complete before creating your
-        Warbler account. Let&apos;s make sure this is the right email address
-        for you — please confirm this is the right address to use for your new
-        account.
+        There's one quick step you need to complete before creating your Warbler
+        account. Let's make sure this is the right email address for you —
+        please confirm this is the right address to use for your new account.
       </Text>
       <Text className="mb-0 text-lg">
         Please enter this verification code to get started on Warbler:

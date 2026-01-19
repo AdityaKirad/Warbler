@@ -13,42 +13,6 @@ import { honeypot } from "./.server/honeypot";
 import { getUser } from "./.server/utils";
 import type { Route } from "./+types/root";
 
-export const meta: Route.MetaFunction = () => [
-  { charSet: "utf-8" },
-  { name: "viewport", content: "width=device-width, initial-scale=1" },
-  {
-    name: "apple-mobile-web-app-title",
-    content: "Warbler",
-  },
-];
-
-export const links: Route.LinksFunction = () => [
-  {
-    rel: "icon",
-    type: "image/png",
-    href: "/favicon-96x96.png",
-    sizes: "96x96",
-  },
-  {
-    rel: "icon",
-    type: "image/svg+xml",
-    href: "/favicon.svg",
-  },
-  {
-    rel: "shortcut icon",
-    href: "/favicon.ico",
-  },
-  {
-    rel: "apple-touch-icon",
-    href: "/apple-touch-icon.png",
-    sizes: "180x180",
-  },
-  {
-    rel: "manifest",
-    href: "/site.webmanifest",
-  },
-];
-
 export async function loader({ request }: Route.LoaderArgs) {
   const user = await getUser(request);
   const honeypotProps = await honeypot.getInputProps();
@@ -62,6 +26,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="apple-mobile-web-app-title" content="Warbler" />
+        <link
+          rel="icon"
+          type="image/png"
+          href="/favicon-96x96.png"
+          sizes="96x96"
+        />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <link
+          rel="apple-touch-icon"
+          href="/apple-touch-icon.png"
+          sizes="180x180"
+        />
+        <link rel="manifest" href="/site.webmanifest" />
         <Meta />
         <Links />
       </head>

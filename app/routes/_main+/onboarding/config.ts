@@ -1,4 +1,4 @@
-type OnboardingStep = {
+export type OnboardingStep = {
   id: string;
   required: boolean;
   title: string;

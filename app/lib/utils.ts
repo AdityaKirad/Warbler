@@ -1,5 +1,12 @@
 import type { ClassValue } from "clsx";
 import { clsx } from "clsx";
+import {
+  differenceInHours,
+  differenceInMinutes,
+  differenceInSeconds,
+  differenceInYears,
+  format,
+} from "date-fns";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -61,3 +68,35 @@ export const base64url = {
     }
   },
 };
+
+export const getNameInitials = (name: string | undefined) =>
+  name
+    ?.split(" ")
+    .map((n) => n[0])
+    .join("");
+
+export function formatTweetDate(date: Date) {
+  const now = new Date();
+
+  const seconds = differenceInSeconds(now, date);
+  if (seconds < 60) {
+    return `${seconds}sec`;
+  }
+
+  const minutes = differenceInMinutes(now, date);
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+
+  const hours = differenceInHours(now, date);
+  if (hours < 24) {
+    return `${hours}h`;
+  }
+
+  const years = differenceInYears(now, date);
+  if (years < 1) {
+    return format(date, "MMM d");
+  }
+
+  return format(date, "MMM d, yyyy");
+}

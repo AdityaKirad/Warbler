@@ -82,8 +82,8 @@ export function ChangePasswordForm() {
         numbers, letters, and punctuation marks for a strong password.
       </p>
       <p className="text-muted-foreground text-sm">
-        You&apos;ll be logged out of all active X sessions after your password
-        is changed.
+        You'll be logged out of all active X sessions after your password is
+        changed.
       </p>
       <Form className="space-y-4" method="POST" {...getFormProps(form)}>
         <HoneypotInputs />

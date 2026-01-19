@@ -1,5 +1,4 @@
-import { db } from "~/.server/drizzle";
-import { generateUsernameSuggestions, requireUser } from "~/.server/utils";
+import { EditorContent } from "@tiptap/react";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import Logo from "~/assets/logo-small.webp";
 import {
@@ -18,19 +17,28 @@ import {
 } from "~/components/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
-import { dialogContentClassName } from "~/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  dialogContentClassName,
+  DialogTrigger,
+} from "~/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-import { cn } from "~/lib/utils";
+import { Separator } from "~/components/ui/separator";
+import { useUser } from "~/hooks/use-user";
+import { cn, getNameInitials } from "~/lib/utils";
 import { getNextOnboardingStep } from "~/routes/_main+/onboarding/config";
 import { MoreHorizontalIcon, SearchIcon } from "lucide-react";
-import { Link, NavLink, Outlet, useLoaderData } from "react-router";
-import type { Route } from "./+types/_layout";
+import { useState } from "react";
+import { Link, NavLink, Outlet } from "react-router";
 import { DOB, ProfilePhoto, Username } from "./onboarding/forms";
+import { EmojiPopover } from "./tweet-form/emoji-popover";
+import { useTweetForm } from "./tweet-form/use-tweet-form";
 
 type NavItemProps = {
   title: string;
@@ -39,29 +47,9 @@ type NavItemProps = {
   ActiveIcon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 };
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const { user } = await requireUser(request);
-
+export default function Layout() {
+  const { user } = useUser();
   const onboardingStep = getNextOnboardingStep(user.onboardingStepsCompleted);
-
-  return {
-    onboardingStep,
-    user,
-    ...(onboardingStep?.id === "username"
-      ? {
-          usernameSuggestion: await generateUsernameSuggestions(db, {
-            name: user.name,
-            email: user.email,
-            dob: user.dob,
-          }),
-        }
-      : {}),
-  };
-}
-
-export default function Layout({
-  loaderData: { onboardingStep, user },
-}: Route.ComponentProps) {
   const links: NavItemProps[] = [
     {
       to: "/home",
@@ -107,14 +95,14 @@ export default function Layout({
     },
   ];
   return (
-    <div className="flex">
+    <div className="flex h-full">
       <div className="basis flex shrink-0 grow flex-col items-end">
         <div className="w-70">
           <nav className="fixed inset-y-0 flex w-70 flex-col gap-2 border-r p-2">
-            <Link
+            <NavLink
               className="hover:bg-muted inline size-14 rounded-full outline-2 outline-transparent transition-[colors,outline] focus-visible:outline-white"
               to="/home"
-              title="Home">
+              aria-label="Home">
               <img
                 src={Logo}
                 alt="App Logo"
@@ -123,20 +111,20 @@ export default function Layout({
                 decoding="async"
                 loading="lazy"
               />
-            </Link>
+            </NavLink>
 
             {links.map((link) => (
               <NavItem key={link.title} {...link} />
             ))}
 
-            <Button className="rounded-full">Post</Button>
+            <PostTweetModal />
 
             <UserDropdown />
           </nav>
         </div>
       </div>
-      <div className="flex shrink grow flex-col">
-        <main className="w-250">
+      <div className="flex h-full shrink grow flex-col">
+        <main className="h-full w-250">
           {onboardingStep ? (
             <div className="bg-muted/60 fixed inset-0">
               <div className={dialogContentClassName}>
@@ -162,7 +150,8 @@ export default function Layout({
 }
 
 function OnboardingStep() {
-  const { onboardingStep } = useLoaderData<typeof loader>();
+  const { user } = useUser();
+  const onboardingStep = getNextOnboardingStep(user.onboardingStepsCompleted);
   switch (onboardingStep?.id) {
     case "dob":
       return <DOB {...onboardingStep} />;
@@ -176,7 +165,7 @@ function OnboardingStep() {
 }
 
 function UserDropdown() {
-  const { user } = useLoaderData<typeof loader>();
+  const { user } = useUser();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -185,13 +174,10 @@ function UserDropdown() {
             <AvatarImage
               src={user.image ?? DefaultProfilePicture}
               alt={user.username}
+              loading="lazy"
+              decoding="async"
             />
-            <AvatarFallback>
-              {user.name
-                .split(" ")
-                .map((name) => name[0])
-                .join("")}
-            </AvatarFallback>
+            <AvatarFallback>{getNameInitials(user.name)}</AvatarFallback>
           </Avatar>
           <div className="text-left">
             <p className="font-medium">{user.name}</p>
@@ -214,14 +200,68 @@ function UserDropdown() {
   );
 }
 
+function PostTweetModal() {
+  const [modal, modalSet] = useState(false);
+  const { charCount, editor, fetcher, isOverlimit, isPending, user } =
+    useTweetForm(() => modalSet(false));
+  return (
+    <Dialog open={modal} onOpenChange={modalSet}>
+      <DialogTrigger asChild>
+        <Button className="rounded-full">Post</Button>
+      </DialogTrigger>
+      <DialogContent className="h-fit px-4 py-12">
+        <fetcher.Form
+          className="flex flex-col gap-2"
+          onSubmit={(evt) => {
+            evt.preventDefault();
+
+            const formData = new FormData();
+            formData.set("tweet", JSON.stringify(editor?.getJSON()));
+            fetcher.submit(formData, { method: "POST", action: "/tweet" });
+          }}>
+          <div className="flex min-h-24 gap-2">
+            <Avatar asChild>
+              <Link to={user.username}>
+                <AvatarImage
+                  src={user.image ?? DefaultProfilePicture}
+                  alt={user.username}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <AvatarFallback>{getNameInitials(user.name)}</AvatarFallback>
+              </Link>
+            </Avatar>
+            <EditorContent
+              className="min-w-0 grow [&_p.is-editor-empty]:first:before:pointer-events-none [&_p.is-editor-empty]:first:before:float-left [&_p.is-editor-empty]:first:before:h-0 [&_p.is-editor-empty]:first:before:text-current/50 [&_p.is-editor-empty]:first:before:content-[attr(data-placeholder)] [&>div]:min-h-full [&>div]:outline-none"
+              editor={editor}
+            />
+          </div>
+          <Separator />
+          <div className="flex justify-between">
+            <div className="flex gap-2">
+              <EmojiPopover editor={editor} />
+            </div>
+            <Button
+              className="rounded-full px-6"
+              type="submit"
+              disabled={!charCount || isOverlimit || isPending}>
+              Post
+            </Button>
+          </div>
+        </fetcher.Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function NavItem({ title, to, Icon, ActiveIcon }: NavItemProps) {
   return (
-    <NavLink className="group outline-none" to={to} title={title}>
+    <NavLink className="group outline-none" to={to} aria-label={title}>
       {({ isActive }) => {
         const IconComponent = isActive ? ActiveIcon : Icon;
         return (
           <div className="not-[:where(.group):focus-visible_*]:group-hover:bg-muted inline-flex items-center gap-4 rounded-full p-3 outline-2 outline-transparent transition-[colors,outline] group-focus-visible:outline-white">
-            <IconComponent className="size-6" />
+            <IconComponent />
             <span className={cn({ "font-medium": isActive }, "text-xl")}>
               {title}
             </span>

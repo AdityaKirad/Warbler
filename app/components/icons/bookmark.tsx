@@ -6,6 +6,9 @@ export function BookmarkOutlinedIcon(props: React.SVGProps<SVGSVGElement>) {
       viewBox="0 0 24 24"
       strokeWidth={1.5}
       stroke="currentColor"
+      width={24}
+      height={24}
+      aria-hidden
       {...props}>
       <path
         strokeLinecap="round"
@@ -22,6 +25,9 @@ export function BookmarkSolidIcon(props: React.SVGProps<SVGSVGElement>) {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
       fill="currentColor"
+      width={24}
+      height={24}
+      aria-hidden
       {...props}>
       <path
         fillRule="evenodd"

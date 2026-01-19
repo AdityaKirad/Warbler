@@ -125,6 +125,33 @@ input[type="date"]:empty {
   @apply text-muted-foreground;
 }
 
+.EmojiPickerReact.epr-dark-theme {
+  --epr-bg-color: var(--color-popover);
+  --epr-text-color: var(--color-popover-foreground);
+  --epr-category-label-bg-color: var(--color-popover);
+  --epr-search-input-bg-color: var(--color-popover);
+  --epr-search-input-bg-color-active: var(--color-popover);
+  --epr-search-input-placeholder-color: color-mix(
+    in oklab,
+    currentColor 50%,
+    transparent
+  );
+  --epr-search-input-border-radius: calc(infinity * 1px);
+  --epr-search-border-color: var(--color-border);
+  --epr-search-border-color-active: var(--color-blue-500);
+  --epr-header-padding: 0.5rem;
+  --epr-horizontal-padding: 0.5rem;
+}
+
+.EmojiPickerReact .epr-icn-suggested,
+.EmojiPickerReact .epr-emoji-category[data-name="suggested"] {
+  display: none;
+}
+
+.EmojiPickerReact .epr-search-container > input {
+  border-width: 2px;
+}
+
 @layer components {
   .loading {
     @apply pointer-events-none inline-block aspect-square bg-current;

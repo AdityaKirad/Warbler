@@ -19,10 +19,14 @@ export default function Page() {
           />
           <div className="flex gap-2 sm:hidden">
             <Button className="rounded-full" variant="outline" asChild>
-              <Link to="/flow/login">Log in</Link>
+              <Link to="/flow/login" aria-label="Log in">
+                Log in
+              </Link>
             </Button>
             <Button className="rounded-full" asChild>
-              <Link to="/flow/signup">Sign up</Link>
+              <Link to="/flow/signup" aria-label="Sign up">
+                Sign up
+              </Link>
             </Button>
           </div>
         </div>
@@ -30,13 +34,14 @@ export default function Page() {
       <div className="mx-auto flex w-full max-w-7xl justify-end">
         <div className="flex flex-col items-center gap-4">
           <p className="text-muted-foreground">
-            Hmm...this page doesn&apos;t exist. Try searching for something
-            else.
+            Hmm...this page doesn't exist. Try searching for something else.
           </p>
           <Button
             className="rounded-full bg-blue-500/90 text-white hover:bg-blue-500 focus-visible:bg-blue-500"
             asChild>
-            <Link to="/search">Search</Link>
+            <Link to="/search" aria-label="Search">
+              Search
+            </Link>
           </Button>
         </div>
       </div>
@@ -44,16 +49,20 @@ export default function Page() {
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between max-xl:max-w-4xl max-lg:max-w-2xl">
           <div className="max-md:hidden">
             <p className="text-3xl font-semibold">
-              Don&apos;t miss what&apos;s happening
+              Don't miss what's happening
             </p>
             <p>People on Warbler are the first to know</p>
           </div>
           <div className="flex gap-4 max-md:grow max-md:gap-2">
             <Button className="flex-1 rounded-full" variant="outline" asChild>
-              <Link to="/flow/login">Log in</Link>
+              <Link to="/flow/login" aria-label="Log in">
+                Log in
+              </Link>
             </Button>
             <Button className="flex-1 rounded-full" asChild>
-              <Link to="/flow/signup">Sign up</Link>
+              <Link to="/flow/signup" aria-label="Sign up">
+                Sign up
+              </Link>
             </Button>
           </div>
         </div>

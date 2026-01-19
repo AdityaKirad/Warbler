@@ -88,12 +88,12 @@ export function SetPasswordForm() {
   });
   return (
     <>
-      <h2 className="text-heading">You&apos;ll need a password</h2>
+      <h2 className="text-heading">You'll need a password</h2>
       <Form className="contents" method="POST" {...getFormProps(form)}>
         <HoneypotInputs />
 
         <p className="text-muted-foreground text-sm">
-          Make sure it&apos;s 8 characters or more
+          Make sure it's 8 characters or more
         </p>
 
         <Field

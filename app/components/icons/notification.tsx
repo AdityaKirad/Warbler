@@ -4,8 +4,11 @@ export function NotificationOutlinedIcon(props: React.SVGProps<SVGSVGElement>) {
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
-      strokeWidth={1.5}
       stroke="currentColor"
+      strokeWidth={1.5}
+      height={24}
+      width={24}
+      aria-hidden
       {...props}>
       <path
         strokeLinecap="round"
@@ -22,6 +25,9 @@ export function NotificationSolidIcon(props: React.SVGProps<SVGSVGElement>) {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
       fill="currentColor"
+      height={24}
+      width={24}
+      aria-hidden
       {...props}>
       <path
         fillRule="evenodd"

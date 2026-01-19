@@ -10,11 +10,11 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { useIsPending } from "~/hooks/use-is-pending";
+import { useUser } from "~/hooks/use-user";
 import { CameraIcon } from "lucide-react";
 import { useState } from "react";
-import { useFetcher, useLoaderData } from "react-router";
-import type { action } from ".";
-import type { loader } from "../_layout";
+import { useFetcher } from "react-router";
+import type { action, loader } from ".";
 import { avatarSchema, dobSchema, usernameSchema } from "./schema";
 
 export function DOB({
@@ -114,9 +114,7 @@ export function ProfilePhoto({
                   />
                 </label>
               </TooltipTrigger>
-              <TooltipContent className="p-1 text-sm" side="bottom">
-                Add photo
-              </TooltipContent>
+              <TooltipContent>Add photo</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
@@ -154,7 +152,8 @@ export function Username({
 }) {
   const isPending = useIsPending();
   const fetcher = useFetcher<typeof action>();
-  const { user, usernameSuggestion } = useLoaderData<typeof loader>();
+  const usernameSuggestion = useFetcher<typeof loader>();
+  const { user } = useUser();
   const [username, usernameSet] = useState(user.username);
   const [form, fields] = useForm({
     id: "username",
@@ -163,6 +162,7 @@ export function Username({
     onValidate: ({ formData }) =>
       parseWithZod(formData, { schema: usernameSchema }),
   });
+  fetcher.load("/onboarding");
   return (
     <fetcher.Form
       method="POST"
@@ -181,7 +181,7 @@ export function Username({
         errors={fields.username.errors}
       />
       <div>
-        {usernameSuggestion?.map((suggestion) => (
+        {usernameSuggestion.data?.map((suggestion) => (
           <Button
             key={suggestion}
             type="button"

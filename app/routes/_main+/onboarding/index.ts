@@ -2,7 +2,7 @@ import { parseWithZod } from "@conform-to/zod";
 import type { FileUpload } from "@remix-run/form-data-parser";
 import { parseFormData } from "@remix-run/form-data-parser";
 import { db, user } from "~/.server/drizzle";
-import { requireUser } from "~/.server/utils";
+import { generateUsernameSuggestions, requireUser } from "~/.server/utils";
 import cloudinary from "cloudinary";
 import { eq, sql } from "drizzle-orm";
 import { redirect } from "react-router";
@@ -14,6 +14,16 @@ cloudinary.v2.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const { user } = await requireUser(request);
+
+  return generateUsernameSuggestions(db, {
+    name: user.name,
+    email: user.email,
+    dob: user.dob,
+  });
+}
 
 export async function action({ request }: Route.ActionArgs) {
   const { user } = await requireUser(request);

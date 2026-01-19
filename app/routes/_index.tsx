@@ -44,14 +44,18 @@ export default function HomePage() {
           <Button
             asChild
             className="rounded-full bg-blue-500 text-white hover:bg-blue-600 focus-visible:bg-blue-600 focus-visible:ring-blue-600">
-            <Link to="/flow/signup">Create Account</Link>
+            <Link to="/flow/signup" aria-label="Create Account">
+              Create Account
+            </Link>
           </Button>
           <h3 className="mt-12 mb-4">Already have an account?</h3>
           <Button
             asChild
             className="rounded-full text-blue-500! hover:bg-blue-500/10 focus-visible:bg-blue-500/10 focus-visible:ring-blue-500"
             variant="outline">
-            <Link to="/flow/login">Sign in</Link>
+            <Link to="/flow/login" aria-label="Sign in">
+              Sign in
+            </Link>
           </Button>
         </div>
       </div>
