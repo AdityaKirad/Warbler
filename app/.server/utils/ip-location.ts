@@ -1,8 +1,6 @@
 import { getClientIPAddress } from "remix-utils/get-client-ip-address";
 
-export async function getIpLocation(
-  request: Request,
-): Promise<{ city: string; region: string } | null> {
+export async function getIpLocation(request: Request) {
   const ip = getClientIPAddress(request.headers);
 
   try {
@@ -12,7 +10,8 @@ export async function getIpLocation(
       return null;
     }
 
-    return res.json();
+    const { city, region } = await res.json();
+    return `${city}, ${region}`;
   } catch (error) {
     console.error(error);
     return null;

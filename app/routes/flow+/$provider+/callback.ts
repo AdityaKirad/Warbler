@@ -1,4 +1,5 @@
 import { redirectWithFlash } from "~/.server/authentication";
+import { cloudinary } from "~/.server/cloudinary";
 import {
   oauthCodeVerifierCookie,
   oauthStateCookie,
@@ -10,7 +11,11 @@ import {
 import type { AccountInsertType, UserInsertType } from "~/.server/drizzle";
 import { account, db, user } from "~/.server/drizzle";
 import { providers } from "~/.server/oauth-providers";
-import { createSession, generateUsernameSuggestions } from "~/.server/utils";
+import {
+  createSession,
+  generateUsernameSuggestions,
+  getIpLocation,
+} from "~/.server/utils";
 import { handleNewSession } from "../login/login.server";
 import type { Route } from "./+types/callback";
 
@@ -163,7 +168,7 @@ async function findOAuthUser({
   return null;
 }
 
-function handleOauthSignup(
+async function handleOauthSignup(
   request: Request,
   {
     accountInfo,
@@ -172,10 +177,34 @@ function handleOauthSignup(
     accountInfo: Pick<AccountInsertType, "provider" | "providerId">;
     userInfo: Pick<
       UserInsertType,
-      "email" | "emailVerified" | "image" | "name"
+      "email" | "emailVerified" | "photo" | "name"
     >;
   },
 ) {
+  const onboardingStepsCompleted: string[] = [];
+  let photo: string;
+  if (userInfo.photo) {
+    try {
+      const result = await cloudinary.uploader.upload(userInfo.photo, {
+        folder: "profile-pictures",
+        allowed_formats: ["jpg", "png", "webp", ""],
+        resource_type: "image",
+        transformation: {
+          width: 400,
+          height: 400,
+          crop: "fill",
+          gravity: "face",
+        },
+      });
+      photo = result.secure_url;
+    } catch (error) {
+      console.error("Failed to upload profile picture on cloudinary", error);
+    }
+    onboardingStepsCompleted.push("profile-photo");
+  }
+  if (userInfo.emailVerified) {
+    onboardingStepsCompleted.push("verify-email");
+  }
   return db.transaction(async (tx) => {
     const [username] = await generateUsernameSuggestions(tx, {
       ...userInfo,
@@ -185,11 +214,11 @@ function handleOauthSignup(
     const [createdUser] = await tx
       .insert(user)
       .values({
-        onboardingStepsCompleted: userInfo.emailVerified
-          ? ['verify-email']
-          : [],
-        username: username!,
         ...userInfo,
+        photo,
+        onboardingStepsCompleted,
+        username: username!,
+        location: await getIpLocation(request),
       })
       .returning();
 

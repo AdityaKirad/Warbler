@@ -30,8 +30,13 @@ export const user = sqliteTable("user", {
   username: text().notNull().unique(),
   email: text().notNull().unique(),
   emailVerified: integer({ mode: "boolean" }).notNull(),
+  displayVerifiedEmail: integer({ mode: "boolean" }).notNull().default(false),
   dob: integer({ mode: "timestamp_ms" }),
-  image: text(),
+  photo: text(),
+  coverImage: text(),
+  location: text(),
+  bio: text(),
+  website: text(),
   profileVerified: integer({ mode: "boolean" }).notNull().default(false),
   onboardingStepsCompleted: text({ mode: "json" })
     .$type<string[]>()

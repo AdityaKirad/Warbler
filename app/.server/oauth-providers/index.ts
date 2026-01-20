@@ -9,7 +9,7 @@ export type Provider = {
     name: string;
     email: string;
     emailVerified: boolean;
-    image: string | null;
+    photo: string | null;
   } | null>;
 };
 

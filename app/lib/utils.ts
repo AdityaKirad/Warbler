@@ -100,3 +100,46 @@ export function formatTweetDate(date: Date) {
 
   return format(date, "MMM d, yyyy");
 }
+
+export function formatNumber(value?: number) {
+  if (!value || !Number.isFinite(value) || value < 0) {
+    return "0";
+  }
+
+  if (value < 1_000) {
+    return value.toString();
+  }
+
+  if (value < 1_000_000) {
+    if (value >= 999_500) {
+      return "999.9K";
+    }
+
+    if (value < 10_000) {
+      return truncate(value / 1_000, 1) + "K";
+    }
+
+    return Math.floor(value / 1_000) + "K";
+  }
+
+  if (value < 1_000_000_000) {
+    if (value < 10_000_000) {
+      return truncate(value / 1_000_000, 1) + "M";
+    }
+
+    return Math.floor(value / 1_000_000) + "M";
+  }
+
+  if (value < 10_000_000_000) {
+    return truncate(value / 1_000_000_000, 1) + "B";
+  }
+
+  return Math.floor(value / 1_000_000_000) + "B";
+}
+
+function truncate(value: number, decimals: number) {
+  const factor = Math.pow(10, decimals);
+  return (Math.floor(value * factor) / factor)
+    .toFixed(decimals)
+    .replace(/\.0$/, "");
+}

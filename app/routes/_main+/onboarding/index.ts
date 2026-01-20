@@ -1,19 +1,13 @@
 import { parseWithZod } from "@conform-to/zod";
 import type { FileUpload } from "@remix-run/form-data-parser";
 import { parseFormData } from "@remix-run/form-data-parser";
+import { cloudinary } from "~/.server/cloudinary";
 import { db, user } from "~/.server/drizzle";
 import { generateUsernameSuggestions, requireUser } from "~/.server/utils";
-import cloudinary from "cloudinary";
 import { eq, sql } from "drizzle-orm";
 import { redirect } from "react-router";
 import type { Route } from "./+types";
 import { dobSchema, MAX_IMAGE_SIZE, usernameSchema } from "./schema";
-
-cloudinary.v2.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { user } = await requireUser(request);
@@ -22,6 +16,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     name: user.name,
     email: user.email,
     dob: user.dob,
+    count: 5,
   });
 }
 
@@ -50,10 +45,13 @@ async function handleAvatarUpdate(request: Request, userId: string) {
       return undefined;
     }
     try {
-      const file = await cloudinary.v2.uploader.upload(
-        Buffer.from(await fileUpload.arrayBuffer()).toString(),
+      const base64 = Buffer.from(await fileUpload.arrayBuffer()).toString(
+        "base64",
+      );
+      const file = await cloudinary.uploader.upload(
+        `data:${fileUpload.type};base64,${base64}`,
         {
-          folder: "avatars",
+          folder: "profile-pictures",
           allowed_formats: ["jpg", "png", "webp", ""],
           resource_type: "image",
           transformation: {
@@ -78,14 +76,14 @@ async function handleAvatarUpdate(request: Request, userId: string) {
     uploadHandler,
   );
 
+  const intent = formData.get("intent");
+  const photo = formData.get("avatar")?.toString();
+
   await db
     .update(user)
     .set({
-      image:
-        formData.get("intent") === "update"
-          ? formData.get("avatar")?.toString()
-          : null,
-      onboardingStepsCompleted: sql`json_insert(${user.onboardingStepsCompleted}, '$[#]', 'profile_photo')`,
+      ...(intent === "update" ? { photo } : {}),
+      onboardingStepsCompleted: sql`json_insert(${user.onboardingStepsCompleted}, '$[#]', 'profile-photo')`,
     })
     .where(eq(user.id, userId));
 
@@ -116,15 +114,13 @@ async function handleUsernameUpdate(formData: FormData, userId: string) {
   if (submission.status !== "success") {
     return submission.reply();
   }
+  const { username } = submission.value;
+  const intent = formData.get("intent");
 
   await db
     .update(user)
     .set({
-      ...(formData.get("intent") === "update"
-        ? {
-            username: submission.value.username,
-          }
-        : {}),
+      ...(intent === "update" ? { username } : {}),
       onboardingStepsCompleted: sql`json_insert(${user.onboardingStepsCompleted}, '$[#]', 'username')`,
     })
     .where(eq(user.id, userId));

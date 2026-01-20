@@ -97,17 +97,12 @@ export const GoogleProvider: Provider = {
       return null;
     }
 
-    const {
-      sub: providerId,
-      email_verified: emailVerified,
-      picture: image,
-      ...values
-    } = user.data;
+    const { sub, email_verified, picture, ...values } = user.data;
 
     return {
-      providerId,
-      emailVerified,
-      image,
+      providerId: sub,
+      emailVerified: email_verified,
+      photo: picture,
       ...values,
     };
   },

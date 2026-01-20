@@ -25,6 +25,9 @@ export function UserSolidIcon(props: React.SVGProps<SVGSVGElement>) {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
       fill="currentColor"
+      height={24}
+      width={24}
+      aria-hidden
       {...props}>
       <path
         fillRule="evenodd"

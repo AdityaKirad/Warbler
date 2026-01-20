@@ -3,6 +3,7 @@ import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { DateField, ErrorList, Field } from "~/components/forms";
 import { Button } from "~/components/ui/button";
+import { Loader } from "~/components/ui/loader";
 import {
   Tooltip,
   TooltipContent,
@@ -20,9 +21,11 @@ import { avatarSchema, dobSchema, usernameSchema } from "./schema";
 export function DOB({
   title,
   description,
+  hasNextStep,
 }: {
   title: string;
   description: string;
+  hasNextStep: boolean;
 }) {
   const isPending = useIsPending();
   const fetcher = useFetcher<typeof action>();
@@ -52,7 +55,7 @@ export function DOB({
         className="mt-auto mb-4 rounded-full"
         type="submit"
         disabled={isPending}>
-        Update
+        {isPending ? <Loader /> : hasNextStep ? "Next" : "Save"}
       </Button>
     </fetcher.Form>
   );
@@ -61,9 +64,11 @@ export function DOB({
 export function ProfilePhoto({
   title,
   description,
+  hasNextStep,
 }: {
   title: string;
   description: string;
+  hasNextStep: boolean;
 }) {
   const isPending = useIsPending();
   const fetcher = useFetcher<typeof action>();
@@ -127,7 +132,7 @@ export function ProfilePhoto({
         name="intent"
         value="update"
         disabled={isPending}>
-        Next
+        {isPending ? <Loader /> : hasNextStep ? "Next" : "Save"}
       </Button>
 
       <Button
@@ -146,9 +151,11 @@ export function ProfilePhoto({
 export function Username({
   title,
   description,
+  hasNextStep,
 }: {
   title: string;
   description: string;
+  hasNextStep: boolean;
 }) {
   const isPending = useIsPending();
   const fetcher = useFetcher<typeof action>();
@@ -157,12 +164,15 @@ export function Username({
   const [username, usernameSet] = useState(user.username);
   const [form, fields] = useForm({
     id: "username",
+    defaultValue: {
+      username: user.username,
+    },
     lastResult: fetcher.data,
     constraint: getZodConstraint(usernameSchema),
     onValidate: ({ formData }) =>
       parseWithZod(formData, { schema: usernameSchema }),
   });
-  fetcher.load("/onboarding");
+  // usernameSuggestion.load("/onboarding");
   return (
     <fetcher.Form
       method="POST"
@@ -175,7 +185,6 @@ export function Username({
       <Field
         labelProps={{ children: "Username" }}
         inputProps={{
-          value: username,
           ...getInputProps(fields.username, { type: "text" }),
         }}
         errors={fields.username.errors}
@@ -200,7 +209,7 @@ export function Username({
         name="intent"
         value="update"
         disabled={isPending}>
-        Next
+        {isPending ? <Loader /> : hasNextStep ? "Next" : "Save"}
       </Button>
     </fetcher.Form>
   );

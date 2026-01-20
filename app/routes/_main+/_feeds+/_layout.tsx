@@ -3,24 +3,30 @@ import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
-import { cn, getNameInitials } from "~/lib/utils";
-import { Link, NavLink, Outlet } from "react-router";
+import { getNameInitials } from "~/lib/utils";
+import { Link, Outlet, useLocation } from "react-router";
+import { FeedTab } from "../+feed-tab";
 import { EmojiPopover } from "../tweet-form/emoji-popover";
 import { useTweetForm } from "../tweet-form/use-tweet-form";
 
 export default function Layout() {
+  const location = useLocation();
   return (
     <div className="h-full">
       <div className="h-full w-150 border-r">
-        <div className="bg-background sticky top-0 z-10 flex border-b">
-          <FeedTabs label="All Tweets" title="For you" to="/home" />
-          <FeedTabs
-            label="Following tweets"
-            title="Following"
-            to="/following"
-          />
-        </div>
-        <TweetForm />
+        {["/home", "/following"].includes(location.pathname) && (
+          <>
+            <div className="bg-background sticky top-0 z-10 flex border-b">
+              <FeedTab label="All Tweets" title="For you" to="/home" />
+              <FeedTab
+                label="Following tweets"
+                title="Following"
+                to="/following"
+              />
+            </div>
+            <TweetForm />
+          </>
+        )}
         <Outlet />
       </div>
     </div>
@@ -33,6 +39,8 @@ function TweetForm() {
   return (
     <fetcher.Form
       className="flex gap-2 px-4 py-2"
+      method="POST"
+      action="/tweet"
       onSubmit={(evt) => {
         evt.preventDefault();
 
@@ -43,7 +51,7 @@ function TweetForm() {
       <Avatar asChild>
         <Link to={user.username}>
           <AvatarImage
-            src={user.image ?? DefaultProfilePicture}
+            src={user.photo ?? DefaultProfilePicture}
             alt={user.username}
             loading="lazy"
             decoding="async"
@@ -70,32 +78,5 @@ function TweetForm() {
         </div>
       </div>
     </fetcher.Form>
-  );
-}
-
-function FeedTabs({
-  label,
-  title,
-  to,
-}: {
-  label: string;
-  title: string;
-  to: string;
-}) {
-  return (
-    <NavLink
-      className={({ isActive }) =>
-        cn(
-          "hover:bg-muted/50 focus-visible:bg-muted/50 relative flex-1 py-4 text-center font-medium outline-2 outline-transparent transition-[background-color,outline-color] focus-visible:outline-white",
-          {
-            "after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:rounded-full after:bg-blue-500":
-              isActive,
-          },
-        )
-      }
-      to={to}
-      aria-label={label}>
-      {title}
-    </NavLink>
   );
 }

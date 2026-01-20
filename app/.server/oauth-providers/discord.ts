@@ -101,7 +101,7 @@ export const DiscordProvider: Provider = {
       name: data.global_name ?? data.username,
       email: data.email,
       emailVerified: data.verified,
-      image: `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png`,
+      photo: `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png`,
     };
   },
 };

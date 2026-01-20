@@ -9,7 +9,7 @@ import {
 } from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
 import { desc, eq, sql } from "drizzle-orm";
-import { TweetCard } from "./+tweet-card";
+import { TweetCard } from "../+tweet-card";
 import type { Route } from "./+types/following";
 
 export const meta = () => [{ title: "Following / Warbler" }];
@@ -44,7 +44,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       user: {
         name: user.name,
         username: user.username,
-        image: user.image,
+        photo: user.photo,
       },
     })
     .from(tweet)

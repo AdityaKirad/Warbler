@@ -33,7 +33,7 @@ import {
   Repeat2Icon,
 } from "lucide-react";
 import { Link, useFetcher, useLocation } from "react-router";
-import type { action } from "../tweet+/$tweetId.engagement";
+import type { action } from "./tweet+/$tweetId.engagement";
 
 export function TweetCard({
   id,
@@ -54,7 +54,7 @@ export function TweetCard({
   hasBookmarked: boolean;
   hasLiked: boolean;
   hasReposted: boolean;
-  user: Pick<UserSelectType, "name" | "username" | "image">;
+  user: Pick<UserSelectType, "name" | "username" | "photo">;
 }) {
   const fetcher = useFetcher<typeof action>();
   const location = useLocation();
@@ -66,7 +66,7 @@ export function TweetCard({
       <Avatar asChild>
         <Link to={`/${user?.username}`} className="z-10">
           <AvatarImage
-            src={user?.image ?? DefaultProfilePicture}
+            src={user?.photo ?? DefaultProfilePicture}
             alt={user?.username}
             loading="lazy"
             decoding="async"

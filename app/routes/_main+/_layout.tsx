@@ -32,7 +32,10 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { useUser } from "~/hooks/use-user";
 import { cn, getNameInitials } from "~/lib/utils";
-import { getNextOnboardingStep } from "~/routes/_main+/onboarding/config";
+import {
+  getNextOnboardingStep,
+  hasStepsAfterCurrent,
+} from "~/routes/_main+/onboarding/config";
 import { MoreHorizontalIcon, SearchIcon } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router";
@@ -152,15 +155,16 @@ export default function Layout() {
 function OnboardingStep() {
   const { user } = useUser();
   const onboardingStep = getNextOnboardingStep(user.onboardingStepsCompleted);
+  const hasNextStep = hasStepsAfterCurrent(user.onboardingStepsCompleted);
   switch (onboardingStep?.id) {
     case "dob":
-      return <DOB {...onboardingStep} />;
-    case "profile_photo":
-      return <ProfilePhoto {...onboardingStep} />;
+      return <DOB {...onboardingStep} hasNextStep={hasNextStep} />;
+    case "profile-photo":
+      return <ProfilePhoto {...onboardingStep} hasNextStep={hasNextStep} />;
     case "verify-email":
       break;
     case "username":
-      return <Username {...onboardingStep} />;
+      return <Username {...onboardingStep} hasNextStep={hasNextStep} />;
   }
 }
 
@@ -172,7 +176,7 @@ function UserDropdown() {
         <Button className="mt-auto h-auto rounded-full p-2" variant="ghost">
           <Avatar>
             <AvatarImage
-              src={user.image ?? DefaultProfilePicture}
+              src={user.photo ?? DefaultProfilePicture}
               alt={user.username}
               loading="lazy"
               decoding="async"
@@ -223,7 +227,7 @@ function PostTweetModal() {
             <Avatar asChild>
               <Link to={user.username}>
                 <AvatarImage
-                  src={user.image ?? DefaultProfilePicture}
+                  src={user.photo ?? DefaultProfilePicture}
                   alt={user.username}
                   loading="lazy"
                   decoding="async"

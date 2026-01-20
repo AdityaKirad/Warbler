@@ -20,9 +20,7 @@ export const createSession = async (
     .insert(schema.session)
     .values({
       userId,
-      location: await getIpLocation(request).then((location) =>
-        location ? `${location.city}, ${location.region}` : null,
-      ),
+      location: await getIpLocation(request),
       token: createSessionToken(),
       userAgent: getUserAgent(request),
       ipAddress: getClientIPAddress(request),
