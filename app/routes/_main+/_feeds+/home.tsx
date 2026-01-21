@@ -8,7 +8,7 @@ import { TweetCard } from "../+tweet-card";
 export const meta = () => [{ title: "Home / Warbler" }];
 
 export async function loader({ request }: Route.LoaderArgs) {
-  await requireUser(request);
+  const { user: currentUser } = await requireUser(request);
 
   const tweets = await db
     .select({
@@ -18,19 +18,19 @@ export async function loader({ request }: Route.LoaderArgs) {
       createdAt: tweet.createdAt,
 
       likeCount: db.$count(like, eq(like.tweetId, tweet.id)),
-      replyCount: db.$count(tweet, eq(tweet.replyToTweetId, tweet.id)),
       repostCount: db.$count(repost, eq(repost.tweetId, tweet.id)),
+      replyCount: sql<number>`(SELECT COUNT (*) FROM ${tweet} AS reply WHERE reply.reply_to_tweet_id = ${tweet.id})`,
 
       hasBookmarked:
-        sql<boolean>`EXISTS(SELECT 1 FROM ${bookmark} WHERE ${bookmark.tweetId} = ${tweet.id} AND ${bookmark.userId} = ${user.id})`.as(
+        sql<boolean>`EXISTS(SELECT 1 FROM ${bookmark} WHERE ${bookmark.tweetId} = ${tweet.id} AND ${bookmark.userId} = ${currentUser.id})`.as(
           "has_bookmarked",
         ),
       hasLiked:
-        sql<boolean>`EXISTS(SELECT 1 FROM ${like} WHERE ${like.tweetId} = ${tweet.id} AND ${like.userId} = ${user.id})`.as(
+        sql<boolean>`EXISTS(SELECT 1 FROM ${like} WHERE ${like.tweetId} = ${tweet.id} AND ${like.userId} = ${currentUser.id})`.as(
           "has_liked",
         ),
       hasReposted:
-        sql<boolean>`EXISTS(SELECT 1 FROM ${repost} WHERE ${repost.tweetId} = ${tweet.id} AND ${repost.userId} = ${user.id})`.as(
+        sql<boolean>`EXISTS(SELECT 1 FROM ${repost} WHERE ${repost.tweetId} = ${tweet.id} AND ${repost.userId} = ${currentUser.id})`.as(
           "has_reposted",
         ),
 
@@ -49,10 +49,10 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function Page({ loaderData }: Route.ComponentProps) {
   return (
-    <div>
+    <>
       {loaderData.map((tweet) => (
         <TweetCard key={tweet.id} {...tweet} />
       ))}
-    </div>
+    </>
   );
 }

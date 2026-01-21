@@ -18,6 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import { Separator } from "~/components/ui/separator";
 import {
   Tooltip,
   TooltipContent,
@@ -32,7 +33,9 @@ import {
   PenLineIcon,
   Repeat2Icon,
 } from "lucide-react";
+import { useState } from "react";
 import { Link, useFetcher, useLocation } from "react-router";
+import { DialogTweetForm } from "./+dialog-tweet-form";
 import type { action } from "./tweet+/$tweetId.engagement";
 
 export function TweetCard({
@@ -61,26 +64,29 @@ export function TweetCard({
   return (
     <article
       key={id}
-      className="hover:bg-muted/10 relative isolate flex gap-2 border-b px-4 py-2 transition-colors first:border-t-2">
-      <Link className="absolute inset-0" to={`/${user?.username}/${id}`} />
+      className="hover:bg-muted/10 relative isolate flex gap-2 border-b px-4 py-2 transition-colors">
+      <Link
+        className="absolute inset-0"
+        to={`/${user.username}/status/${id}`}
+      />
       <Avatar asChild>
-        <Link to={`/${user?.username}`} className="z-10">
+        <Link to={`/${user.username}`} className="z-10">
           <AvatarImage
-            src={user?.photo ?? DefaultProfilePicture}
-            alt={user?.username}
+            src={user.photo ?? DefaultProfilePicture}
+            alt={user.username}
             loading="lazy"
             decoding="async"
           />
-          <AvatarFallback>{getNameInitials(user?.name)}</AvatarFallback>
+          <AvatarFallback>{getNameInitials(user.name)}</AvatarFallback>
         </Link>
       </Avatar>
       <div className="grow space-y-2">
         <div className="text-muted-foreground">
-          <Link to={`/${user?.username}`} className="relative z-10">
+          <Link to={`/${user.username}`} className="relative z-10">
             <span className="font-medium text-white hover:underline">
-              {user?.name}
+              {user.name}
             </span>{" "}
-            @<span>{user?.username}</span> ·{" "}
+            @<span>{user.username}</span> ·{" "}
           </Link>
           <TooltipProvider>
             <Tooltip>
@@ -100,7 +106,13 @@ export function TweetCard({
           method="POST"
           action={`/tweet/${id}/engagement`}
           className="flex justify-between">
-          <CommentButton replyCount={replyCount} />
+          <CommentButton
+            body={body}
+            createdAt={createdAt}
+            id={id}
+            replyCount={replyCount}
+            user={user}
+          />
           <RepostButton hasReposted={hasReposted} repostCount={repostCount} />
           <LikeButton hasLiked={hasLiked} likeCount={likeCount} />
           <ViewsButton views={views} />
@@ -112,16 +124,74 @@ export function TweetCard({
   );
 }
 
-function CommentButton({ replyCount }: { replyCount: number }) {
+function CommentButton({
+  body,
+  createdAt,
+  id,
+  replyCount,
+  user,
+}: {
+  body: string;
+  createdAt: Date;
+  id: string;
+  replyCount: number;
+  user: Pick<UserSelectType, "name" | "username" | "photo">;
+}) {
+  const [dialog, dialogSet] = useState(false);
   return (
-    <Dialog>
+    <Dialog open={dialog} onOpenChange={dialogSet}>
       <DialogTrigger className="group z-10 flex cursor-pointer items-center gap-0.5 transition-colors outline-none hover:text-blue-500 focus-visible:text-blue-500">
         <div className="z-10 rounded-full p-2 group-hover:bg-blue-400/20 group-focus-visible:bg-blue-400/20 group-focus-visible:outline-2 group-focus-visible:outline-blue-300">
           <ChatIcon className="size-5" />
         </div>
         <span>{replyCount}</span>
       </DialogTrigger>
-      <DialogContent></DialogContent>
+      <DialogContent className="h-fit px-4 pt-12 pb-4">
+        <article className="flex gap-2">
+          <div className="flex flex-col items-center">
+            <Avatar asChild>
+              <Link to={`/${user.username}`} className="z-10">
+                <AvatarImage
+                  src={user.photo ?? DefaultProfilePicture}
+                  alt={user.username}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <AvatarFallback>{getNameInitials(user.name)}</AvatarFallback>
+              </Link>
+            </Avatar>
+            <Separator
+              className="mt-1 h-auto w-0.5 grow rounded-none rounded-t-full"
+              orientation="vertical"
+            />
+          </div>
+          <div>
+            <div className="text-muted-foreground">
+              <span className="font-medium text-white">{user.name}</span> @
+              {user.username} ·{" "}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>{formatTweetDate(createdAt)}</span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {format(createdAt, "h:mm a · MMM d, yyyy")}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <div className="pb-4" dangerouslySetInnerHTML={{ __html: body }} />
+            <div className="text-muted-foreground">
+              Replying to{" "}
+              <span className="text-blue-500">@{user.username}</span>
+            </div>
+          </div>
+        </article>
+        <DialogTweetForm
+          replyToTweetId={id}
+          onSuccess={() => dialogSet(false)}
+        />
+      </DialogContent>
     </Dialog>
   );
 }

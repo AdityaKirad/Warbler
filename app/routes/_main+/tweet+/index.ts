@@ -37,8 +37,6 @@ export async function action({
     );
   }
 
-  console.log("Tweet JSON: ", tweetJSON);
-
   let charCount: number | undefined;
 
   try {
@@ -70,8 +68,9 @@ export async function action({
 
   await db.insert(tweet).values({
     userId,
-    body: generateHTML(tweetJSON, extensions),
     bodyJson: tweetJSON,
+    replyToTweetId: formData.get("replyToTweetId")?.toString(),
+    body: generateHTML(tweetJSON, extensions),
   });
 
   return data({ status: "success" });

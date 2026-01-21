@@ -100,26 +100,6 @@ export const session = sqliteTable(
   (table) => [index("session_user_id_idx").on(table.userId)],
 );
 
-export const follows = sqliteTable(
-  "follows",
-  {
-    followerId: text("follower_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
-    followingId: text("following_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
-  },
-  (table) => [
-    primaryKey({
-      name: "follows_follower_id_following_id_primary_key",
-      columns: [table.followerId, table.followingId],
-    }),
-    index("follows_follower_id_idx").on(table.followerId),
-    index("follows_following_id_idx").on(table.followingId),
-  ],
-);
-
 export const tweet = sqliteTable(
   "tweet",
   {
@@ -141,6 +121,26 @@ export const tweet = sqliteTable(
     index("tweet_user_id_idx").on(table.userId),
     index("tweet_reply_to_tweet_id_idx").on(table.replyToTweetId),
     index("tweet_quoted_tweet_id_idx").on(table.quotedTweetId),
+  ],
+);
+
+export const follows = sqliteTable(
+  "follows",
+  {
+    followerId: text("follower_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
+    followingId: text("following_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  },
+  (table) => [
+    primaryKey({
+      name: "follows_follower_id_following_id_primary_key",
+      columns: [table.followerId, table.followingId],
+    }),
+    index("follows_follower_id_idx").on(table.followerId),
+    index("follows_following_id_idx").on(table.followingId),
   ],
 );
 

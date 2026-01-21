@@ -12,6 +12,7 @@ import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "./.server/honeypot";
 import { getUser } from "./.server/utils";
 import type { Route } from "./+types/root";
+import { Toaster } from "./components/ui/sonner";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const user = await getUser(request);
@@ -48,6 +49,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
+        <Toaster />
         <ScrollRestoration />
         <Scripts />
       </body>

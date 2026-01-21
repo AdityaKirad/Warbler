@@ -11,15 +11,19 @@ export async function loader({ request }: Route.LoaderArgs) {
   const {
     user: { id },
   } = await requireUser(request);
+  const replies = db.$with("replies").as(
+    db.select({ replyToTweetId: tweet.replyToTweetId }).from(tweet),
+  );
 
   const bookmarks = await db
+    .with(replies)
     .select({
       id: tweet.id,
       body: tweet.body,
       views: tweet.views,
       createdAt: tweet.createdAt,
 
-      replyCount: db.$count(tweet, eq(tweet.replyToTweetId, tweet.id)),
+      replyCount: db.$count(replies, eq(replies.replyToTweetId, tweet.id)),
       likeCount: db.$count(like, eq(like.tweetId, tweet.id)),
       repostCount: db.$count(repost, eq(repost.tweetId, tweet.id)),
 

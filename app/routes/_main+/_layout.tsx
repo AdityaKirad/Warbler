@@ -1,4 +1,3 @@
-import { EditorContent } from "@tiptap/react";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import Logo from "~/assets/logo-small.webp";
 import {
@@ -29,7 +28,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-import { Separator } from "~/components/ui/separator";
 import { useUser } from "~/hooks/use-user";
 import { cn, getNameInitials } from "~/lib/utils";
 import {
@@ -38,10 +36,9 @@ import {
 } from "~/routes/_main+/onboarding/config";
 import { MoreHorizontalIcon, SearchIcon } from "lucide-react";
 import { useState } from "react";
-import { Link, NavLink, Outlet } from "react-router";
+import { NavLink, Outlet } from "react-router";
+import { DialogTweetForm } from "./+dialog-tweet-form";
 import { DOB, ProfilePhoto, Username } from "./onboarding/forms";
-import { EmojiPopover } from "./tweet-form/emoji-popover";
-import { useTweetForm } from "./tweet-form/use-tweet-form";
 
 type NavItemProps = {
   title: string;
@@ -120,7 +117,7 @@ export default function Layout() {
               <NavItem key={link.title} {...link} />
             ))}
 
-            <PostTweetModal />
+            <PostTweetDialog />
 
             <UserDropdown />
           </nav>
@@ -204,55 +201,15 @@ function UserDropdown() {
   );
 }
 
-function PostTweetModal() {
-  const [modal, modalSet] = useState(false);
-  const { charCount, editor, fetcher, isOverlimit, isPending, user } =
-    useTweetForm(() => modalSet(false));
+function PostTweetDialog() {
+  const [dialog, dialogSet] = useState(false);
   return (
-    <Dialog open={modal} onOpenChange={modalSet}>
+    <Dialog open={dialog} onOpenChange={dialogSet}>
       <DialogTrigger asChild>
         <Button className="rounded-full">Post</Button>
       </DialogTrigger>
-      <DialogContent className="h-fit px-4 py-12">
-        <fetcher.Form
-          className="flex flex-col gap-2"
-          onSubmit={(evt) => {
-            evt.preventDefault();
-
-            const formData = new FormData();
-            formData.set("tweet", JSON.stringify(editor?.getJSON()));
-            fetcher.submit(formData, { method: "POST", action: "/tweet" });
-          }}>
-          <div className="flex min-h-24 gap-2">
-            <Avatar asChild>
-              <Link to={user.username}>
-                <AvatarImage
-                  src={user.photo ?? DefaultProfilePicture}
-                  alt={user.username}
-                  loading="lazy"
-                  decoding="async"
-                />
-                <AvatarFallback>{getNameInitials(user.name)}</AvatarFallback>
-              </Link>
-            </Avatar>
-            <EditorContent
-              className="min-w-0 grow [&_p.is-editor-empty]:first:before:pointer-events-none [&_p.is-editor-empty]:first:before:float-left [&_p.is-editor-empty]:first:before:h-0 [&_p.is-editor-empty]:first:before:text-current/50 [&_p.is-editor-empty]:first:before:content-[attr(data-placeholder)] [&>div]:min-h-full [&>div]:outline-none"
-              editor={editor}
-            />
-          </div>
-          <Separator />
-          <div className="flex justify-between">
-            <div className="flex gap-2">
-              <EmojiPopover editor={editor} />
-            </div>
-            <Button
-              className="rounded-full px-6"
-              type="submit"
-              disabled={!charCount || isOverlimit || isPending}>
-              Post
-            </Button>
-          </div>
-        </fetcher.Form>
+      <DialogContent className="h-fit px-4 pt-12 pb-4">
+        <DialogTweetForm onSuccess={() => dialogSet(false)} />
       </DialogContent>
     </Dialog>
   );

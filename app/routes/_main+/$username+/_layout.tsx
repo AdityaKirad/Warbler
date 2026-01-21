@@ -2,11 +2,11 @@ import { db, follows, tweet, user } from "~/.server/drizzle";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { Button } from "~/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from "~/components/ui/dialog";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import { useUser } from "~/hooks/use-user";
 import { formatNumber } from "~/lib/utils";
 import { format } from "date-fns";
@@ -14,25 +14,45 @@ import { eq } from "drizzle-orm";
 import {
   ArrowLeftIcon,
   BalloonIcon,
+  BanIcon,
   CalendarDaysIcon,
   ChevronRightIcon,
+  InfoIcon,
   Link2Icon,
   MapPinIcon,
+  MoreHorizontalIcon,
+  ShareIcon,
   ShieldCheckIcon,
+  VolumeOffIcon,
 } from "lucide-react";
-import { useState } from "react";
 import {
   Link,
   Outlet,
   useFetcher,
   useLoaderData,
+  useLocation,
   useNavigate,
+  useParams,
 } from "react-router";
+import { toast } from "sonner";
 import { FeedTab } from "../+feed-tab";
+import { EditProfile } from "./+edit-profile";
 import type { Route } from "./+types/_layout";
+import type { action } from "./follow";
+
+export type LayoutLoader = typeof loader;
 
 export async function loader({ params }: Route.LoaderArgs) {
+  const followers = db
+    .$with("followers")
+    .as(
+      db
+        .select({ id: follows.followerId })
+        .from(follows)
+        .where(eq(follows.followingId, user.id)),
+    );
   const [data] = await db
+    .with(followers)
     .select({
       id: user.id,
       name: user.name,
@@ -47,11 +67,12 @@ export async function loader({ params }: Route.LoaderArgs) {
       profileVerified: user.profileVerified,
       createdAt: user.createdAt,
 
-      followers: db.$count(follows, eq(follows.followingId, user.id)),
+      followers: followers.id,
       following: db.$count(follows, eq(follows.followerId, user.id)),
       posts: db.$count(tweet, eq(tweet.userId, user.id)),
     })
     .from(user)
+    .leftJoin(followers, eq(user.id, followers.id))
     .where(eq(user.username, params.username));
 
   return data;
@@ -59,7 +80,7 @@ export async function loader({ params }: Route.LoaderArgs) {
 
 export default function Layout({ loaderData }: Route.ComponentProps) {
   const navigate = useNavigate();
-  const { user } = useUser();
+  console.log(loaderData);
   return (
     <div className="h-full">
       <div className="h-full w-150 border-r">
@@ -79,130 +100,209 @@ export default function Layout({ loaderData }: Route.ComponentProps) {
             </span>
           </div>
         </div>
-        <div className="relative [--header-height:12.5rem]">
-          {loaderData?.coverImage ? (
-            <Link to="cover_image"></Link>
-          ) : (
-            <div className="bg-muted h-(--header-height)" />
-          )}
-          <div>
-            <Link
-              className="bg-background absolute top-[calc(var(--header-height)-var(--photo-size)/2)] left-4 rounded-full p-1 [--photo-size:7.5rem]"
-              to="about">
-              <img
-                className="size-(--photo-size) rounded-full"
-                src={loaderData?.photo ?? DefaultProfilePicture}
-                alt={loaderData?.name ?? "User profile"}
-                decoding="async"
-                loading="lazy"
-              />
-            </Link>
-            {loaderData?.id === user.id ? <EditProfileButton /> : <></>}
-          </div>
-        </div>
+        <ProfileHeader />
         <div className="mt-14 flex flex-col gap-2 p-4">
-          <div className="leading-none">
-            <h2 className="text-xl font-bold">{loaderData?.name}</h2>
-            <span className="text-muted-foreground text-sm">
-              @{loaderData?.username}
-            </span>
-          </div>
-          {loaderData?.bio && <p>{loaderData.bio}</p>}
-          <div className="text-muted-foreground flex flex-wrap gap-2 [&_svg]:size-5 [&>div]:flex [&>div]:items-center [&>div]:gap-1">
-            {loaderData?.location && (
-              <div>
-                <MapPinIcon />
-                <span>{loaderData.location}</span>
-              </div>
-            )}
-            {loaderData?.website && (
-              <div>
-                <Link2Icon />
-                <span>{loaderData.website}</span>
-              </div>
-            )}
-            {loaderData?.dob && (
-              <div>
-                <BalloonIcon />
-                <span>Born {format(loaderData.dob, "MMMM d, yyyy")}</span>
-              </div>
-            )}
-            {loaderData?.createdAt && (
-              <div>
-                <CalendarDaysIcon />
-                <span>Joined {format(loaderData.createdAt, "MMMM yyyy")}</span>
-                <ChevronRightIcon />
-              </div>
-            )}
-            {loaderData?.displayVerifiedEmail && (
-              <div>
-                <ShieldCheckIcon />
-                <span>Verified email address</span>
-              </div>
-            )}
-          </div>
+          <ProfileData />
           <div className="[&_span]:text-muted-foreground flex gap-4">
             <p>
               {formatNumber(loaderData?.following)} <span>Following</span>
             </p>
-            <p>
+            {/* <p>
               {formatNumber(loaderData?.followers)} <span>Followers</span>
-            </p>
+            </p> */}
           </div>
         </div>
-        <div className="flex border-b">
-          <FeedTab to="" title="Posts" label={`${loaderData?.name} Posts`} />
-          <FeedTab
-            to="with_replies"
-            title="Replies"
-            label={`${loaderData?.name} Replies`}
-          />
-          <FeedTab
-            to="media"
-            title="Media"
-            label={`${loaderData?.name} Media`}
-          />
-        </div>
+        <Tabs />
         <Outlet />
       </div>
     </div>
   );
 }
 
-function EditProfileButton() {
-  const fetcher = useFetcher();
-  const data = useLoaderData<typeof loader>();
-  const [dialog, dialogSet] = useState(false);
+function ProfileHeader() {
+  const user = useLoaderData<LayoutLoader>();
+  const currentUser = useUser();
   return (
-    <Dialog open={dialog} onOpenChange={dialogSet}>
-      <DialogTrigger asChild>
-        <Button
-          className="float-right mt-4 mr-8 rounded-full"
-          variant="outline">
-          Edit Profile
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="px-4 pt-4">
-        <fetcher.Form className="flex flex-col gap-4">
-          <DialogTitle className="ml-12">Edit Profile</DialogTitle>
-          <div className="relative [--header-height:12.5rem]">
-            {data?.coverImage ? (
-              <Link to="cover_image"></Link>
-            ) : (
-              <div className="bg-muted h-(--header-height)" />
-            )}
-            <div className="bg-background absolute top-[calc(var(--header-height)-var(--photo-size)/2)] left-4 rounded-full p-1 [--photo-size:7.5rem]">
-              <img
-                className="size-(--photo-size) rounded-full"
-                src={data?.photo ?? DefaultProfilePicture}
-                alt={data?.name ?? "User profile"}
-                decoding="async"
-                loading="lazy"
-              />
-            </div>
+    <div className="relative [--header-height:12.5rem]">
+      {user?.coverImage ? (
+        <Link to="cover_image"></Link>
+      ) : (
+        <div className="bg-muted h-(--header-height)" />
+      )}
+      <div>
+        <Link
+          className="bg-background absolute top-[calc(var(--header-height)-var(--photo-size)/2)] left-4 rounded-full p-1 [--photo-size:7.5rem]"
+          to="about">
+          <img
+            className="size-(--photo-size) rounded-full"
+            src={user?.photo ?? DefaultProfilePicture}
+            alt={user?.name ?? "User profile"}
+            decoding="async"
+            loading="lazy"
+          />
+        </Link>
+        {user?.id === currentUser.user.id ? (
+          <EditProfile />
+        ) : (
+          <ProfileActions />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProfileData() {
+  const user = useLoaderData<LayoutLoader>();
+  return (
+    <>
+      <div className="leading-none">
+        <h2 className="text-xl font-bold">{user?.name}</h2>
+        <span className="text-muted-foreground text-sm">@{user?.username}</span>
+      </div>
+      {user?.bio && <p>{user.bio}</p>}
+      <div className="text-muted-foreground flex flex-wrap gap-2 [&_svg]:size-5 [&>div]:flex [&>div]:items-center [&>div]:gap-1">
+        {user?.location && (
+          <div>
+            <MapPinIcon />
+            <span>{user.location}</span>
           </div>
-        </fetcher.Form>
-      </DialogContent>
-    </Dialog>
+        )}
+        {user?.website && (
+          <div>
+            <Link2Icon />
+            <span>{user.website}</span>
+          </div>
+        )}
+        {user?.dob && (
+          <div>
+            <BalloonIcon />
+            <span>Born {format(user.dob, "MMMM d, yyyy")}</span>
+          </div>
+        )}
+        {user?.createdAt && (
+          <div>
+            <CalendarDaysIcon />
+            <span>Joined {format(user.createdAt, "MMMM yyyy")}</span>
+            <ChevronRightIcon />
+          </div>
+        )}
+        {user?.displayVerifiedEmail && (
+          <div>
+            <ShieldCheckIcon />
+            <span>Verified email address</span>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function ProfileActions() {
+  const fetcher = useFetcher<typeof action>();
+  const params = useParams();
+  const user = useLoaderData<typeof loader>();
+  const location = useLocation();
+  return (
+    <div className="float-right mt-4 mr-4 flex gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            className="rounded-full"
+            variant="outline"
+            size="icon"
+            aria-label="More">
+            <MoreHorizontalIcon />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="bg-background">
+          <DropdownMenuItem
+            className="flex items-center gap-2 text-base font-medium"
+            asChild>
+            <Link
+              to={`/${params.username}/about`}
+              aria-label="About this account">
+              <InfoIcon />
+              <span>About this account</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="flex items-center gap-2 text-base font-medium"
+            asChild>
+            <button
+              onClick={async () => {
+                if (navigator.share) {
+                  try {
+                    await navigator.share({
+                      url: `${process.env.URL}/${params.username}`,
+                    });
+                  } catch (error) {
+                    console.error(error);
+                  }
+                } else {
+                  toast("Your browser doesn't support sharing.");
+                }
+              }}>
+              <ShareIcon />
+              <span>Share @{params.username} via...</span>
+            </button>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="flex w-full items-center gap-2 text-base font-medium"
+            asChild>
+            <button
+              onClick={() =>
+                navigator.clipboard.writeText(
+                  `${process.env.URL}/${params.username}`,
+                )
+              }>
+              <Link2Icon className="-rotate-45" />
+              <span>Copy link to profile</span>
+            </button>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-base font-medium">
+            <VolumeOffIcon />
+            <span>Mute</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-base font-medium">
+            <BanIcon className="rotate-90" />
+            <span>Block @{params.username}</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <fetcher.Form method="POST" action="follow">
+        <input type="hidden" name="id" defaultValue={user?.id} />
+        <input
+          type="hidden"
+          name="redirectTo"
+          defaultValue={location.pathname}
+        />
+        <Button className="rounded-full" type="submit" variant="outline">
+          Follow
+        </Button>
+      </fetcher.Form>
+    </div>
+  );
+}
+
+function Tabs() {
+  const user = useLoaderData<typeof loader>();
+  const currentUser = useUser();
+  return (
+    <div className="flex border-b">
+      <FeedTab
+        to={`/${user?.username}`}
+        title="Posts"
+        label={`${user?.name} Posts`}
+      />
+      <FeedTab
+        to="with_replies"
+        title="Replies"
+        label={`${user?.name} Replies`}
+      />
+      <FeedTab to="media" title="Media" label={`${user?.name} Media`} />
+      {user?.id === currentUser.user.id && (
+        <FeedTab to="likes" title="Likes" label={`${user?.name} Likes`} />
+      )}
+    </div>
   );
 }

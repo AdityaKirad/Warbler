@@ -1,10 +1,10 @@
 import { bookmark, db, like, repost, tweet, user } from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { useRouteLoaderData } from "react-router";
 import { TweetCard } from "../+tweet-card";
 import type { LayoutLoader } from "./_layout";
-import type { Route } from "./+types";
+import type { Route } from "./+types/with_replies";
 
 export function meta({ matches }: Route.MetaArgs) {
   const match = matches.find(
@@ -49,9 +49,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     })
     .from(tweet)
     .leftJoin(user, eq(user.id, tweet.userId))
-    .where(
-      and(eq(user.username, params.username), isNull(tweet.replyToTweetId)),
-    )
+    .where(eq(user.username, params.username))
     .orderBy(desc(tweet.createdAt))
     .limit(50);
 

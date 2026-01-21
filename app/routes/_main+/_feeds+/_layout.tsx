@@ -38,7 +38,7 @@ function TweetForm() {
     useTweetForm();
   return (
     <fetcher.Form
-      className="flex gap-2 px-4 py-2"
+      className="flex gap-2 border-b px-4 py-2"
       method="POST"
       action="/tweet"
       onSubmit={(evt) => {
