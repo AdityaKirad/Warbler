@@ -8,17 +8,17 @@ import {
   user,
 } from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
+import { TweetCard } from "~/components/tweet-card";
 import { desc, eq, sql } from "drizzle-orm";
-import { TweetCard } from "../+tweet-card";
 import type { Route } from "./+types/following";
 
 export const meta = () => [{ title: "Following / Warbler" }];
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { user: currentUser } = await requireUser(request);
-  const replies = db.$with("replies").as(
-    db.select({ replyToTweetId: tweet.replyToTweetId }).from(tweet),
-  );
+  const replies = db
+    .$with("replies")
+    .as(db.select({ replyToTweetId: tweet.replyToTweetId }).from(tweet));
 
   return db
     .with(replies)

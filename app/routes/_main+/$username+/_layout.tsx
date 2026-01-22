@@ -1,5 +1,6 @@
 import { db, follows, tweet, user } from "~/.server/drizzle";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
+import { FeedTab } from "~/components/feed-tab";
 import { Button } from "~/components/ui/button";
 import {
   DropdownMenu,
@@ -35,7 +36,6 @@ import {
   useParams,
 } from "react-router";
 import { toast } from "sonner";
-import { FeedTab } from "../+feed-tab";
 import { EditProfile } from "./+edit-profile";
 import type { Route } from "./+types/_layout";
 import type { action } from "./follow";
@@ -43,16 +43,16 @@ import type { action } from "./follow";
 export type LayoutLoader = typeof loader;
 
 export async function loader({ params }: Route.LoaderArgs) {
-  const followers = db
-    .$with("followers")
-    .as(
-      db
-        .select({ id: follows.followerId })
-        .from(follows)
-        .where(eq(follows.followingId, user.id)),
-    );
+  // const followers = db
+  //   .$with("followers")
+  //   .as(
+  //     db
+  //       .select({ id: follows.followerId })
+  //       .from(follows)
+  //       .where(eq(follows.followingId, user.id)),
+  //   );
   const [data] = await db
-    .with(followers)
+    // .with(followers)
     .select({
       id: user.id,
       name: user.name,
@@ -67,12 +67,12 @@ export async function loader({ params }: Route.LoaderArgs) {
       profileVerified: user.profileVerified,
       createdAt: user.createdAt,
 
-      followers: followers.id,
+      // followers: followers.id,
       following: db.$count(follows, eq(follows.followerId, user.id)),
       posts: db.$count(tweet, eq(tweet.userId, user.id)),
     })
     .from(user)
-    .leftJoin(followers, eq(user.id, followers.id))
+    // .leftJoin(followers, eq(user.id, followers.id))
     .where(eq(user.username, params.username));
 
   return data;
@@ -214,7 +214,7 @@ function ProfileActions() {
             <MoreHorizontalIcon />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="bg-background">
+        <DropdownMenuContent>
           <DropdownMenuItem
             className="flex items-center gap-2 text-base font-medium"
             asChild>

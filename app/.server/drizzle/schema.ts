@@ -112,6 +112,7 @@ export const tweet = sqliteTable(
       .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
     bodyJson: text({ mode: "json" }).$type<Record<string, unknown>>().notNull(),
     body: text().notNull(),
+    text: text().notNull(),
     replyToTweetId: text().references((): AnySQLiteColumn => tweet.id),
     quotedTweetId: text().references((): AnySQLiteColumn => tweet.id),
     views: integer().notNull().default(0),

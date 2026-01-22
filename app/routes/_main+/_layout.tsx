@@ -1,5 +1,6 @@
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import Logo from "~/assets/logo-small.webp";
+import { DialogTweetForm } from "~/components/dialog-tweet-form";
 import {
   BookmarkOutlinedIcon,
   BookmarkSolidIcon,
@@ -37,7 +38,6 @@ import {
 import { MoreHorizontalIcon, SearchIcon } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router";
-import { DialogTweetForm } from "./+dialog-tweet-form";
 import { DOB, ProfilePhoto, Username } from "./onboarding/forms";
 
 type NavItemProps = {
@@ -187,7 +187,7 @@ function UserDropdown() {
           <MoreHorizontalIcon className="ml-auto" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="bg-background w-(--radix-dropdown-menu-trigger-width) py-4">
+      <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width) py-4">
         <DropdownMenuItem className="text-base font-medium">
           Add an existing account
         </DropdownMenuItem>

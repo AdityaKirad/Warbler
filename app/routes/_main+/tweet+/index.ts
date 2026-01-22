@@ -4,7 +4,7 @@ import { db, tweet } from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
 import type { UNSAFE_DataWithResponseInit as DataWithResponseInit } from "react-router";
 import { data } from "react-router";
-import { extensions } from "../tweet-form/util";
+import { extensions } from "../../../components/tweet-form/util";
 import type { Route } from "./+types";
 
 export async function action({
@@ -37,10 +37,10 @@ export async function action({
     );
   }
 
-  let charCount: number | undefined;
+  let text: string;
 
   try {
-    charCount = [...generateText(tweetJSON, extensions)].length;
+    text = generateText(tweetJSON, extensions);
   } catch (error) {
     console.error("Invalid TipTap Document: ", error);
     return data(
@@ -51,6 +51,8 @@ export async function action({
       { status: 400 },
     );
   }
+
+  const charCount = [...text].length;
 
   if (!charCount) {
     return data({
@@ -68,6 +70,7 @@ export async function action({
 
   await db.insert(tweet).values({
     userId,
+    text,
     bodyJson: tweetJSON,
     replyToTweetId: formData.get("replyToTweetId")?.toString(),
     body: generateHTML(tweetJSON, extensions),

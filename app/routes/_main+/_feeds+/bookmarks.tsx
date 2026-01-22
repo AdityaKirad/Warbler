@@ -1,19 +1,19 @@
 import { bookmark, db, like, repost, tweet, user } from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
+import { TweetCard } from "~/components/tweet-card";
 import { Button } from "~/components/ui/button";
 import { desc, eq, sql } from "drizzle-orm";
 import { ArrowLeftIcon, SearchIcon } from "lucide-react";
 import { useNavigate } from "react-router";
-import { TweetCard } from "../+tweet-card";
 import type { Route } from "./+types/bookmarks";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const {
     user: { id },
   } = await requireUser(request);
-  const replies = db.$with("replies").as(
-    db.select({ replyToTweetId: tweet.replyToTweetId }).from(tweet),
-  );
+  const replies = db
+    .$with("replies")
+    .as(db.select({ replyToTweetId: tweet.replyToTweetId }).from(tweet));
 
   const bookmarks = await db
     .with(replies)

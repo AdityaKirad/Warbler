@@ -1,16 +1,16 @@
 import { bookmark, db, like, repost, tweet } from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
+import { TweetCard } from "~/components/tweet-card";
 import { useUser } from "~/hooks/use-user";
 import { eq, sql } from "drizzle-orm";
 import { redirect } from "react-router";
-import { TweetCard } from "../+tweet-card";
 import type { Route } from "./+types/likes";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
   const { user } = await requireUser(request);
-  const replies = db.$with("replies").as(
-    db.select({ replyToTweetId: tweet.replyToTweetId }).from(tweet),
-  );
+  const replies = db
+    .$with("replies")
+    .as(db.select({ replyToTweetId: tweet.replyToTweetId }).from(tweet));
 
   if (params.username !== user.username) {
     throw redirect(params.username);

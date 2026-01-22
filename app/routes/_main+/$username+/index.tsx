@@ -1,8 +1,8 @@
 import { bookmark, db, like, repost, tweet, user } from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
+import { TweetCard } from "~/components/tweet-card";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { useRouteLoaderData } from "react-router";
-import { TweetCard } from "../+tweet-card";
 import type { LayoutLoader } from "./_layout";
 import type { Route } from "./+types";
 
@@ -18,9 +18,9 @@ export function meta({ matches }: Route.MetaArgs) {
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   await requireUser(request);
-  const replies = db.$with("replies").as(
-    db.select({ replyToTweetId: tweet.replyToTweetId }).from(tweet),
-  );
+  const replies = db
+    .$with("replies")
+    .as(db.select({ replyToTweetId: tweet.replyToTweetId }).from(tweet));
 
   const posts = await db
     .with(replies)

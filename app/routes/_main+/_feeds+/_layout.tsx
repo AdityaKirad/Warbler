@@ -1,18 +1,18 @@
 import { EditorContent } from "@tiptap/react";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
+import { FeedTab } from "~/components/feed-tab";
+import { SearchFollowSidebar } from "~/components/search-follow-sidebar";
+import { EmojiPopover, useTweetForm } from "~/components/tweet-form";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { getNameInitials } from "~/lib/utils";
 import { Link, Outlet, useLocation } from "react-router";
-import { FeedTab } from "../+feed-tab";
-import { EmojiPopover } from "../tweet-form/emoji-popover";
-import { useTweetForm } from "../tweet-form/use-tweet-form";
 
 export default function Layout() {
   const location = useLocation();
   return (
-    <div className="h-full">
+    <div className="flex gap-8">
       <div className="h-full w-150 border-r">
         {["/home", "/following"].includes(location.pathname) && (
           <>
@@ -29,6 +29,7 @@ export default function Layout() {
         )}
         <Outlet />
       </div>
+      <SearchFollowSidebar />
     </div>
   );
 }

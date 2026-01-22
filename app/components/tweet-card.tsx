@@ -30,13 +30,14 @@ import { format } from "date-fns";
 import {
   ChartNoAxesColumnIcon,
   HeartIcon,
+  MoreHorizontalIcon,
   PenLineIcon,
   Repeat2Icon,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useFetcher, useLocation } from "react-router";
-import { DialogTweetForm } from "./+dialog-tweet-form";
-import type { action } from "./tweet+/$tweetId.engagement";
+import type { action } from "../routes/_main+/tweet+/$tweetId.engagement";
+import { DialogTweetForm } from "./dialog-tweet-form";
 
 export function TweetCard({
   id,
@@ -81,12 +82,12 @@ export function TweetCard({
         </Link>
       </Avatar>
       <div className="grow space-y-2">
-        <div className="text-muted-foreground">
+        <div className="text-muted-foreground flex items-center gap-1">
           <Link to={`/${user.username}`} className="relative z-10">
             <span className="font-medium text-white hover:underline">
               {user.name}
             </span>{" "}
-            @<span>{user.username}</span> ·{" "}
+            @user.username ·
           </Link>
           <TooltipProvider>
             <Tooltip>
@@ -100,6 +101,7 @@ export function TweetCard({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          <MoreOptionDropdownMenu />
         </div>
         <div dangerouslySetInnerHTML={{ __html: body }} />
         <fetcher.Form
@@ -124,7 +126,7 @@ export function TweetCard({
   );
 }
 
-function CommentButton({
+export function CommentButton({
   body,
   createdAt,
   id,
@@ -196,7 +198,7 @@ function CommentButton({
   );
 }
 
-function RepostButton({
+export function RepostButton({
   repostCount,
   hasReposted,
 }: {
@@ -217,7 +219,7 @@ function RepostButton({
         </div>
         <span>{repostCount}</span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="bg-background">
+      <DropdownMenuContent>
         <DropdownMenuItem className="w-full text-base [&_svg]:size-5" asChild>
           <button type="submit" name="engagement" value="repost">
             <Repeat2Icon />
@@ -233,7 +235,7 @@ function RepostButton({
   );
 }
 
-function LikeButton({
+export function LikeButton({
   likeCount,
   hasLiked,
 }: {
@@ -262,27 +264,7 @@ function LikeButton({
   );
 }
 
-function ViewsButton({ views }: { views: number }) {
-  return (
-    <Dialog>
-      <DialogTrigger className="group relative z-10 flex items-center gap-0.5 transition-colors outline-none hover:text-blue-500 focus-visible:text-blue-500">
-        <div className="rounded-full p-2 group-hover:bg-blue-500/20 group-focus-visible:bg-blue-500/20 group-focus-visible:outline-2 group-focus-visible:outline-blue-300">
-          <ChartNoAxesColumnIcon className="size-5" />
-        </div>
-        <span>{views}</span>
-      </DialogTrigger>
-      <DialogContent className="h-fit p-20">
-        <DialogTitle className="text-[2rem]">Views</DialogTitle>
-        <DialogDescription>Times this post was seen.</DialogDescription>
-        <DialogClose className="rounded-full" asChild>
-          <Button>Dismiss</Button>
-        </DialogClose>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function BookmarkButton({ hasBookmarked }: { hasBookmarked: boolean }) {
+export function BookmarkButton({ hasBookmarked }: { hasBookmarked: boolean }) {
   return (
     <button
       className={cn(
@@ -301,5 +283,44 @@ function BookmarkButton({ hasBookmarked }: { hasBookmarked: boolean }) {
         />
       </div>
     </button>
+  );
+}
+
+export function MoreOptionDropdownMenu() {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          className="relative z-10 ml-auto size-8 rounded-full"
+          variant="ghost"
+          size="icon"
+          aria-label="More Options">
+          <MoreHorizontalIcon />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem asChild></DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ViewsButton({ views }: { views: number }) {
+  return (
+    <Dialog>
+      <DialogTrigger className="group relative z-10 flex items-center gap-0.5 transition-colors outline-none hover:text-blue-500 focus-visible:text-blue-500">
+        <div className="rounded-full p-2 group-hover:bg-blue-500/20 group-focus-visible:bg-blue-500/20 group-focus-visible:outline-2 group-focus-visible:outline-blue-300">
+          <ChartNoAxesColumnIcon className="size-5" />
+        </div>
+        <span>{views}</span>
+      </DialogTrigger>
+      <DialogContent className="h-fit p-20">
+        <DialogTitle className="text-[2rem]">Views</DialogTitle>
+        <DialogDescription>Times this post was seen.</DialogDescription>
+        <DialogClose className="rounded-full" asChild>
+          <Button>Dismiss</Button>
+        </DialogClose>
+      </DialogContent>
+    </Dialog>
   );
 }

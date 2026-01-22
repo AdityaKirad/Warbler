@@ -3,7 +3,7 @@ import { requireUser } from "~/.server/utils";
 import { desc, eq, sql } from "drizzle-orm";
 import type { Route } from "./+types/home";
 import "date-fns";
-import { TweetCard } from "../+tweet-card";
+import { TweetCard } from "../../../components/tweet-card";
 
 export const meta = () => [{ title: "Home / Warbler" }];
 
@@ -48,11 +48,5 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export default function Page({ loaderData }: Route.ComponentProps) {
-  return (
-    <>
-      {loaderData.map((tweet) => (
-        <TweetCard key={tweet.id} {...tweet} />
-      ))}
-    </>
-  );
+  return loaderData.map((tweet) => <TweetCard key={tweet.id} {...tweet} />);
 }
