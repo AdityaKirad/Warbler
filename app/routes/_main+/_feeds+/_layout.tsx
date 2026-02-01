@@ -12,8 +12,8 @@ import { Link, Outlet, useLocation } from "react-router";
 export default function Layout() {
   const location = useLocation();
   return (
-    <div className="flex gap-8">
-      <div className="h-full w-150 border-r">
+    <div className="flex h-full justify-between">
+      <div className="h-full w-150 border-x">
         {["/home", "/following"].includes(location.pathname) && (
           <>
             <div className="bg-background sticky top-0 z-10 flex border-b">
@@ -61,10 +61,7 @@ function TweetForm() {
         </Link>
       </Avatar>
       <div className="flex min-w-0 grow flex-col gap-2">
-        <EditorContent
-          className="[&_p.is-editor-empty]:first:before:pointer-events-none [&_p.is-editor-empty]:first:before:float-left [&_p.is-editor-empty]:first:before:h-0 [&_p.is-editor-empty]:first:before:text-current/50 [&_p.is-editor-empty]:first:before:content-[attr(data-placeholder)] [&>div]:min-h-12 [&>div]:outline-none"
-          editor={editor}
-        />
+        <EditorContent className="[&>div]:min-h-12" editor={editor} />
         <Separator />
         <div className="flex items-center justify-between">
           <div className="flex gap-2">

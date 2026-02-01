@@ -2,8 +2,8 @@ import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { DateField, ErrorList, Field } from "~/components/forms";
+import { Spinner } from "~/components/spinner";
 import { Button } from "~/components/ui/button";
-import { Loader } from "~/components/ui/loader";
 import {
   Tooltip,
   TooltipContent,
@@ -55,7 +55,7 @@ export function DOB({
         className="mt-auto mb-4 rounded-full"
         type="submit"
         disabled={isPending}>
-        {isPending ? <Loader /> : hasNextStep ? "Next" : "Save"}
+        {isPending ? <Spinner /> : hasNextStep ? "Next" : "Save"}
       </Button>
     </fetcher.Form>
   );
@@ -132,7 +132,7 @@ export function ProfilePhoto({
         name="intent"
         value="update"
         disabled={isPending}>
-        {isPending ? <Loader /> : hasNextStep ? "Next" : "Save"}
+        {isPending ? <Spinner /> : hasNextStep ? "Next" : "Save"}
       </Button>
 
       <Button
@@ -209,7 +209,7 @@ export function Username({
         name="intent"
         value="update"
         disabled={isPending}>
-        {isPending ? <Loader /> : hasNextStep ? "Next" : "Save"}
+        {isPending ? <Spinner /> : hasNextStep ? "Next" : "Save"}
       </Button>
     </fetcher.Form>
   );

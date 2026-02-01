@@ -2,8 +2,8 @@ import type { SubmissionResult } from "@conform-to/react";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { OTPField } from "~/components/forms";
+import { Spinner } from "~/components/spinner";
 import { Button } from "~/components/ui/button";
-import { Loader } from "~/components/ui/loader";
 import { useIsPending } from "~/hooks/use-is-pending";
 import { Form, useActionData } from "react-router";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
@@ -51,7 +51,7 @@ export function VerificationForm() {
           type="submit"
           name="intent"
           value="verify">
-          {isSubmitting ? <Loader /> : "Next"}
+          {isSubmitting ? <Spinner /> : "Next"}
         </Button>
       </Form>
     </>

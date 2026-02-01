@@ -2,8 +2,8 @@ import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Field } from "~/components/forms";
 import { DiscordLogin, GoogleLogin } from "~/components/social-login";
+import { Spinner } from "~/components/spinner";
 import { Button } from "~/components/ui/button";
-import { Loader } from "~/components/ui/loader";
 import { Separator } from "~/components/ui/separator";
 import { useIsPending } from "~/hooks/use-is-pending";
 import { IdentifierSchema } from "~/lib/user-validation";
@@ -118,7 +118,7 @@ export function GetLoginVariant({ redirectTo }: { redirectTo: string | null }) {
             type="submit"
             name="intent"
             value="get_login_variant">
-            {isPending ? <Loader /> : "Next"}
+            {isPending ? <Spinner /> : "Next"}
           </Button>
         </Form>
 

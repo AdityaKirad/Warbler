@@ -45,6 +45,7 @@ type NavItemProps = {
   to: string;
   Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   ActiveIcon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  className?: string;
 };
 
 export default function Layout() {
@@ -80,27 +81,30 @@ export default function Layout() {
       title: "Profile",
       Icon: UserOutlinedIcon,
       ActiveIcon: UserSolidIcon,
+      className: "max-[30rem]:hidden",
     },
     {
       to: `/bookmarks`,
       title: "Bookmarks",
       Icon: BookmarkOutlinedIcon,
       ActiveIcon: BookmarkSolidIcon,
+      className: "max-[30rem]:hidden",
     },
     {
       to: "/settings",
       title: "Settings",
       Icon: SettingsOutlinedIcon,
       ActiveIcon: SettingsSolidIcon,
+      className: "max-[30rem]:hidden",
     },
   ];
   return (
     <div className="flex h-full">
       <div className="basis flex shrink-0 grow flex-col items-end">
-        <div className="w-70">
-          <nav className="fixed inset-y-0 flex w-70 flex-col gap-2 border-r p-2">
+        <div className="transition-[width] min-[30rem]:w-20 xl:w-70">
+          <nav className="fixed bottom-0 flex gap-2 p-2 transition-[width] max-xl:items-center max-[30rem]:inset-x-0 max-[30rem]:justify-between max-[30rem]:border-t min-[30rem]:top-0 min-[30rem]:w-20 min-[30rem]:flex-col xl:w-70">
             <NavLink
-              className="hover:bg-muted inline size-14 rounded-full outline-2 outline-transparent transition-[colors,outline] focus-visible:outline-white"
+              className="hover:bg-muted inline size-14 rounded-full outline-2 outline-transparent transition-[colors,outline] focus-visible:outline-white max-[30rem]:hidden"
               to="/home"
               aria-label="Home">
               <img
@@ -124,7 +128,7 @@ export default function Layout() {
         </div>
       </div>
       <div className="flex h-full shrink grow flex-col">
-        <main className="h-full w-250">
+        <main className="mobile:w-150 tablet:w-225 size-full transition-[width] lg:w-250">
           {onboardingStep ? (
             <div className="bg-muted/60 fixed inset-0">
               <div className={dialogContentClassName}>
@@ -170,7 +174,9 @@ function UserDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button className="mt-auto h-auto rounded-full p-2" variant="ghost">
+        <Button
+          className="mt-auto h-auto rounded-full p-2 max-[30rem]:hidden"
+          variant="ghost">
           <Avatar>
             <AvatarImage
               src={user.photo ?? DefaultProfilePicture}
@@ -180,14 +186,14 @@ function UserDropdown() {
             />
             <AvatarFallback>{getNameInitials(user.name)}</AvatarFallback>
           </Avatar>
-          <div className="text-left">
+          <div className="text-left max-xl:hidden">
             <p className="font-medium">{user.name}</p>
             <p className="text-muted-foreground text-sm">@{user.username}</p>
           </div>
-          <MoreHorizontalIcon className="ml-auto" />
+          <MoreHorizontalIcon className="ml-auto max-xl:hidden" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width) py-4">
+      <DropdownMenuContent className="py-4 xl:w-(--radix-dropdown-menu-trigger-width)">
         <DropdownMenuItem className="text-base font-medium">
           Add an existing account
         </DropdownMenuItem>
@@ -206,7 +212,19 @@ function PostTweetDialog() {
   return (
     <Dialog open={dialog} onOpenChange={dialogSet}>
       <DialogTrigger asChild>
-        <Button className="rounded-full">Post</Button>
+        <Button className="rounded-full max-xl:size-14 max-[30rem]:hidden [&_svg]:size-6">
+          <svg
+            viewBox="0 0 24 24"
+            className="xl:hidden"
+            height={24}
+            width={24}
+            aria-hidden>
+            <g>
+              <path d="M23 3c-6.62-.1-10.38 2.421-13.05 6.03C7.29 12.61 6 17.331 6 22h2c0-1.007.07-2.012.19-3H12c4.1 0 7.48-3.082 7.94-7.054C22.79 10.147 23.17 6.359 23 3zm-7 8h-1.5v2H16c.63-.016 1.2-.08 1.72-.188C16.95 15.24 14.68 17 12 17H8.55c.57-2.512 1.57-4.851 3-6.78 2.16-2.912 5.29-4.911 9.45-5.187C20.95 8.079 19.9 11 16 11zM4 9V6H1V4h3V1h2v3h3v2H6v3H4z"></path>
+            </g>
+          </svg>
+          <span className="max-xl:hidden">Post</span>
+        </Button>
       </DialogTrigger>
       <DialogContent className="h-fit px-4 pt-12 pb-4">
         <DialogTweetForm onSuccess={() => dialogSet(false)} />
@@ -215,15 +233,22 @@ function PostTweetDialog() {
   );
 }
 
-function NavItem({ title, to, Icon, ActiveIcon }: NavItemProps) {
+function NavItem({ title, to, Icon, ActiveIcon, className }: NavItemProps) {
   return (
-    <NavLink className="group outline-none" to={to} aria-label={title}>
+    <NavLink
+      className={cn("group outline-none", className)}
+      to={to}
+      aria-label={title}>
       {({ isActive }) => {
         const IconComponent = isActive ? ActiveIcon : Icon;
         return (
           <div className="not-[:where(.group):focus-visible_*]:group-hover:bg-muted inline-flex items-center gap-4 rounded-full p-3 outline-2 outline-transparent transition-[colors,outline] group-focus-visible:outline-white">
             <IconComponent />
-            <span className={cn({ "font-medium": isActive }, "text-xl")}>
+            <span
+              className={cn(
+                { "font-medium": isActive },
+                "text-xl max-xl:hidden",
+              )}>
               {title}
             </span>
           </div>

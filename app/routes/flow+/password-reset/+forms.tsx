@@ -1,8 +1,8 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Field } from "~/components/forms";
+import { Spinner } from "~/components/spinner";
 import { Button } from "~/components/ui/button";
-import { Loader } from "~/components/ui/loader";
 import { useIsPending } from "~/hooks/use-is-pending";
 import {
   IdentifierSchema,
@@ -53,7 +53,7 @@ export function IdentifyForm() {
           name="intent"
           value="identify"
           disabled={isPending}>
-          {isPending ? <Loader /> : "Next"}
+          {isPending ? <Spinner /> : "Next"}
         </Button>
       </Form>
     </>
@@ -116,7 +116,7 @@ export function ChangePasswordForm() {
           name="intent"
           value="change-password"
           disabled={isPending}>
-          {isPending ? <Loader /> : "Next"}
+          {isPending ? <Spinner /> : "Next"}
         </Button>
       </Form>
     </>

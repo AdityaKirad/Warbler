@@ -10,8 +10,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import EmojiPicker, { EmojiStyle, Theme } from "emoji-picker-react";
+import EmojiPickerModule, { EmojiStyle, Theme } from "emoji-picker-react";
 import { SmileIcon } from "lucide-react";
+
+const EmojiPicker =
+  (EmojiPickerModule as { default?: unknown })?.default ?? EmojiPickerModule;
 
 export function EmojiPopover({ editor }: { editor: Editor | null }) {
   return (

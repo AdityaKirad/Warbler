@@ -1,8 +1,8 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { DateField, Field } from "~/components/forms";
+import { Spinner } from "~/components/spinner";
 import { Button } from "~/components/ui/button";
-import { Loader } from "~/components/ui/loader";
 import { useIsPending } from "~/hooks/use-is-pending";
 import { PasswordSchema } from "~/lib/user-validation";
 import { Form, useActionData } from "react-router";
@@ -66,7 +66,7 @@ export function SignupForm() {
           type="submit"
           name="intent"
           value="signup">
-          {isSubmitting ? <Loader /> : "Next"}
+          {isSubmitting ? <Spinner /> : "Next"}
         </Button>
       </Form>
     </>
@@ -117,7 +117,7 @@ export function SetPasswordForm() {
           type="submit"
           name="intent"
           value="set-password">
-          {isSubmitting ? <Loader /> : "Next"}
+          {isSubmitting ? <Spinner /> : "Next"}
         </Button>
       </Form>
     </>

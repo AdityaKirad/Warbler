@@ -43,7 +43,7 @@ export function DialogTweetForm({
           </Link>
         </Avatar>
         <EditorContent
-          className="min-w-0 grow [&_p.is-editor-empty]:first:before:pointer-events-none [&_p.is-editor-empty]:first:before:float-left [&_p.is-editor-empty]:first:before:h-0 [&_p.is-editor-empty]:first:before:text-current/50 [&_p.is-editor-empty]:first:before:content-[attr(data-placeholder)] [&>div]:min-h-full [&>div]:outline-none"
+          className="min-w-0 grow [&>div]:min-h-full"
           editor={editor}
         />
       </div>
