@@ -16,7 +16,7 @@ export function DialogTweetForm({
   replyToTweetId?: string;
 }) {
   const { charCount, editor, fetcher, isOverlimit, isPending, user } =
-    useTweetForm(onSuccess);
+    useTweetForm({ onSuccess });
   return (
     <fetcher.Form
       className="flex flex-col gap-2"

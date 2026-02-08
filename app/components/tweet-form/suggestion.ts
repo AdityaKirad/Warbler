@@ -14,7 +14,6 @@ export type MentionUser = Pick<
 
 export interface MentionSelected {
   id: string | null;
-  label?: string | null;
 }
 
 export interface MentionListRef {
@@ -40,14 +39,15 @@ export const suggestion: Omit<
   MentionOptions<MentionUser, MentionSelected>["suggestion"],
   "editor"
 > = {
+  char: "@",
   decorationClass: "text-blue-500",
   decorationEmptyClass: "text-foreground",
-  // items({ query }: { query: string }): Promise<MentionUser[]> {
-  //   if (!query) {
-  //     return Promise.resolve([]);
-  //   }
-  //   return Promise.resolve([]);
-  // },
+  items({ query }: { query: string }): Promise<MentionUser[]> {
+    if (!query) {
+      return Promise.resolve([]);
+    }
+    return Promise.resolve([]);
+  },
   render: () => {
     let component: ReactRenderer<
       MentionListRef,

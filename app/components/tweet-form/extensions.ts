@@ -1,15 +1,14 @@
-import { CharacterCount } from "@tiptap/extension-character-count";
 import { Document } from "@tiptap/extension-document";
 import { HardBreak } from "@tiptap/extension-hard-break";
 import { History } from "@tiptap/extension-history";
+import { Link } from "@tiptap/extension-link";
 import { Mention } from "@tiptap/extension-mention";
 import { Paragraph } from "@tiptap/extension-paragraph";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { Text } from "@tiptap/extension-text";
 import type { Node as PMNode } from "@tiptap/pm/model";
+import { mergeAttributes } from "@tiptap/react";
 import { suggestion } from "./suggestion";
-
-export const MAX_TWEET_LENGTH = 280;
 
 const MentionWithBackspace = Mention.extend({
   addKeyboardShortcuts() {
@@ -55,15 +54,22 @@ const MentionWithBackspace = Mention.extend({
 });
 
 export const extensions = [
-  CharacterCount,
   Document,
   HardBreak,
   History,
+  Link,
   Paragraph,
   Text,
   MentionWithBackspace.configure({
-    HTMLAttributes: {
-      class: "text-blue-500",
+    renderHTML({ node, options }) {
+      return [
+        "a",
+        mergeAttributes(
+          { class: "text-blue-500", href: `/${node.attrs.id}` },
+          options.HTMLAttributes,
+        ),
+        `${options.suggestion.char}${node.attrs.id}`,
+      ];
     },
     suggestion,
   }),

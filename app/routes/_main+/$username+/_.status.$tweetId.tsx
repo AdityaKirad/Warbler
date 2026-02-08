@@ -2,12 +2,12 @@ import { bookmark, db, like, repost, tweet, user } from "~/.server/drizzle";
 import { getUser } from "~/.server/utils";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { PageTitle } from "~/components/page-title";
+import { RepostButton } from "~/components/tweet-card";
+import { CommentButton } from "~/components/tweet-card/comment-button";
 import {
   BookmarkButton,
-  CommentButton,
   LikeButton,
-  RepostButton,
-} from "~/components/tweet-card";
+} from "~/components/tweet-card/tweet-engagement-buttons";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Separator } from "~/components/ui/separator";
 import { formatNumber, getNameInitials } from "~/lib/utils";

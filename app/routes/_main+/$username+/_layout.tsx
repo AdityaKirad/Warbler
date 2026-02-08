@@ -43,16 +43,7 @@ import type { action } from "./follow";
 export type LayoutLoader = typeof loader;
 
 export async function loader({ params }: Route.LoaderArgs) {
-  // const followers = db
-  //   .$with("followers")
-  //   .as(
-  //     db
-  //       .select({ id: follows.followerId })
-  //       .from(follows)
-  //       .where(eq(follows.followingId, user.id)),
-  //   );
   const [data] = await db
-    // .with(followers)
     .select({
       id: user.id,
       name: user.name,
@@ -67,12 +58,11 @@ export async function loader({ params }: Route.LoaderArgs) {
       profileVerified: user.profileVerified,
       createdAt: user.createdAt,
 
-      // followers: followers.id,
+      followers: db.$count(follows, eq(follows.followingId, user.id)),
       following: db.$count(follows, eq(follows.followerId, user.id)),
       posts: db.$count(tweet, eq(tweet.userId, user.id)),
     })
     .from(user)
-    // .leftJoin(followers, eq(user.id, followers.id))
     .where(eq(user.username, params.username));
 
   return data;
@@ -80,7 +70,6 @@ export async function loader({ params }: Route.LoaderArgs) {
 
 export default function Layout({ loaderData }: Route.ComponentProps) {
   const navigate = useNavigate();
-  console.log(loaderData);
   return (
     <div className="h-full">
       <div className="h-full w-150 border-r">
@@ -107,9 +96,9 @@ export default function Layout({ loaderData }: Route.ComponentProps) {
             <p>
               {formatNumber(loaderData?.following)} <span>Following</span>
             </p>
-            {/* <p>
+            <p>
               {formatNumber(loaderData?.followers)} <span>Followers</span>
-            </p> */}
+            </p>
           </div>
         </div>
         <Tabs />
@@ -160,35 +149,41 @@ function ProfileData() {
         <span className="text-muted-foreground text-sm">@{user?.username}</span>
       </div>
       {user?.bio && <p>{user.bio}</p>}
-      <div className="text-muted-foreground flex flex-wrap gap-2 [&_svg]:size-5 [&>div]:flex [&>div]:items-center [&>div]:gap-1">
+      <div className="text-muted-foreground flex flex-wrap gap-2">
         {user?.location && (
-          <div>
-            <MapPinIcon />
+          <div className="flex items-center gap-1">
+            <MapPinIcon height={20} width={20} />
             <span>{user.location}</span>
           </div>
         )}
         {user?.website && (
-          <div>
-            <Link2Icon />
+          <a
+            className="flex items-center gap-1"
+            href={user.website}
+            target="_blank"
+            rel="noopener noreferrer">
+            <Link2Icon height={20} width={20} />
             <span>{user.website}</span>
-          </div>
+          </a>
         )}
         {user?.dob && (
-          <div>
-            <BalloonIcon />
+          <div className="flex items-center gap-1">
+            <BalloonIcon height={20} width={20} />
             <span>Born {format(user.dob, "MMMM d, yyyy")}</span>
           </div>
         )}
         {user?.createdAt && (
-          <div>
-            <CalendarDaysIcon />
-            <span>Joined {format(user.createdAt, "MMMM yyyy")}</span>
+          <Link to="about" className="group flex items-center gap-1">
+            <CalendarDaysIcon height={20} width={20} />
+            <span className="group-hover:underline group-hover:decoration-1 group-hover:underline-offset-2">
+              Joined {format(user.createdAt, "MMMM yyyy")}
+            </span>
             <ChevronRightIcon />
-          </div>
+          </Link>
         )}
         {user?.displayVerifiedEmail && (
-          <div>
-            <ShieldCheckIcon />
+          <div className="flex items-center gap-1">
+            <ShieldCheckIcon height={20} width={20} />
             <span>Verified email address</span>
           </div>
         )}

@@ -1,80 +1,103 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { JSONContent } from "@tiptap/core";
 import { generateText } from "@tiptap/core";
 import { generateHTML } from "@tiptap/html";
 import { db, tweet } from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
-import type { UNSAFE_DataWithResponseInit as DataWithResponseInit } from "react-router";
-import { data } from "react-router";
-import { extensions } from "../../../components/tweet-form/util";
+import { data, redirect } from "react-router";
+import { extensions } from "../../../components/tweet-form/extensions";
 import type { Route } from "./+types";
 
-export async function action({
-  request,
-}: Route.ActionArgs): Promise<
-  DataWithResponseInit<
-    { status: "error"; message: string } | { status: "success" }
-  >
-> {
+type TipTapDoc = {
+  type: "doc";
+  content: JSONContent[];
+};
+
+export async function action({ request }: Route.ActionArgs) {
   const {
-    user: { id: userId },
+    user: { id: userId, profileVerified },
   } = await requireUser(request);
 
   const formData = await request.formData();
+  const tweetRaw = formData.get("tweet");
 
-  console.log("Received Form Data: ", Object.fromEntries(formData));
+  if (typeof tweetRaw !== "string") {
+    return data("Invalid tweet payload", { status: 400 });
+  }
 
-  let tweetJSON;
+  let parsed: unknown;
 
   try {
-    tweetJSON = JSON.parse(formData.get("tweet") as string);
+    parsed = JSON.parse(tweetRaw as string);
   } catch (error) {
-    console.error("Invalid Tweet JSON: ", error);
-    return data(
-      {
-        status: "error",
-        message: "Invalid Tweet format",
-      },
-      { status: 400 },
-    );
+    console.error("Tweet JSON Parse Error: ", error);
+    parsed = null;
+  }
+
+  let json;
+
+  if (isTiptapDoc(parsed)) {
+    json = parsed;
+  } else {
+    json = textToTipTapDoc(tweetRaw.trim());
   }
 
   let text: string;
 
   try {
-    text = generateText(tweetJSON, extensions);
+    text = generateText(json, extensions);
   } catch (error) {
-    console.error("Invalid TipTap Document: ", error);
-    return data(
-      {
-        status: "error",
-        message: "Invalid Tweet format",
-      },
-      { status: 400 },
-    );
+    console.error("Invalid TipTap document: ", error);
+    return data("Invalid Tweet format", { status: 400 });
   }
 
   const charCount = [...text].length;
 
   if (!charCount) {
-    return data({
-      status: "error",
-      message: "Tweet is empty",
-    });
+    return data("Tweet is empty");
   }
 
-  if (charCount > 280) {
-    return data({
-      status: "error",
-      message: "Tweet is too long",
-    });
+  const maxCharCount = profileVerified ? 1120 : 280;
+
+  if (charCount > maxCharCount) {
+    return data("Tweet is too long");
   }
 
   await db.insert(tweet).values({
     userId,
     text,
-    bodyJson: tweetJSON,
     replyToTweetId: formData.get("replyToTweetId")?.toString(),
-    body: generateHTML(tweetJSON, extensions),
+    bodyJson: json,
+    body: generateHTML(json, extensions),
   });
 
-  return data({ status: "success" });
+  const referer = request.headers.get("referer");
+
+  throw redirect(referer ?? "/home");
+}
+
+function isTiptapDoc(value: unknown): value is TipTapDoc {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as any).type === "doc" &&
+    Array.isArray((value as any).content)
+  );
+}
+
+function textToTipTapDoc(text: string): TipTapDoc {
+  return {
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        content: [
+          {
+            type: "text",
+            text,
+          },
+        ],
+      },
+    ],
+  };
 }

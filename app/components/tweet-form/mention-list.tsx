@@ -32,7 +32,7 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
     const fetchUsers = useCallback(
       async (query: string): Promise<{ ok: boolean; data: MentionUser[] }> => {
         const res = await fetch(
-          `"/get-users"?query=${encodeURIComponent(query)}`,
+          `/get-users?query=${encodeURIComponent(query)}`,
         );
         if (!res.ok) return { ok: false, data: [] };
         const data = (await res.json()) as MentionUser[];
@@ -70,7 +70,6 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
         if (item) {
           props.command({
             id: item.username,
-            label: `@${item.username}`,
           });
         }
       },
