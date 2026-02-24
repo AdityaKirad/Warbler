@@ -33,16 +33,19 @@ export const ONBOARDING_STEPS = [
   },
 ] as const satisfies readonly OnboardingStep[];
 
-export function getNextOnboardingStep(completedSteps: string[]) {
-  return (
-    ONBOARDING_STEPS.find((step) => !completedSteps.includes(step.id)) ?? null
-  );
+export function getNextOnboardingStep(completedSteps: string[] | undefined) {
+  return completedSteps
+    ? ONBOARDING_STEPS.find((step) => !completedSteps?.includes(step.id))
+    : null;
 }
 
-export function hasStepsAfterCurrent(completedSteps: string[]): boolean {
+export function hasStepsAfterCurrent(
+  completedSteps: string[] | undefined,
+): boolean {
   const nextStep = getNextOnboardingStep(completedSteps);
+
   if (!nextStep) return false;
 
-  const afterCompleting = [...completedSteps, nextStep.id];
+  const afterCompleting = [...(completedSteps ?? []), nextStep.id];
   return getNextOnboardingStep(afterCompleting) !== null;
 }

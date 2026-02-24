@@ -1,4 +1,5 @@
 import type { Editor } from "@tiptap/react";
+import type { ComponentType } from "react";
 import {
   Popover,
   PopoverContent,
@@ -11,10 +12,12 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import EmojiPickerModule, { EmojiStyle, Theme } from "emoji-picker-react";
+import type { EmojiClickData } from "emoji-picker-react";
 import { SmileIcon } from "lucide-react";
 
 const EmojiPicker =
-  (EmojiPickerModule as { default?: unknown })?.default ?? EmojiPickerModule;
+  ((EmojiPickerModule as { default?: ComponentType<any> })?.default ??
+    (EmojiPickerModule as ComponentType<any>)) as ComponentType<any>;
 
 export function EmojiPopover({ editor }: { editor: Editor | null }) {
   return (
@@ -37,7 +40,9 @@ export function EmojiPopover({ editor }: { editor: Editor | null }) {
           width="100%"
           emojiStyle={EmojiStyle.TWITTER}
           theme={Theme.DARK}
-          onEmojiClick={(emoji) => editor?.commands.insertContent(emoji.emoji)}
+          onEmojiClick={(emoji: EmojiClickData) =>
+            editor?.commands.insertContent(emoji.emoji)
+          }
         />
       </PopoverContent>
     </Popover>

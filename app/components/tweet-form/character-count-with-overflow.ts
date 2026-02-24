@@ -12,6 +12,12 @@ type CharacterCountWithOverflowStorage = {
   characters: () => number;
 };
 
+declare module "@tiptap/core" {
+  interface Storage {
+    characterCountWithOverflow: CharacterCountWithOverflowStorage;
+  }
+}
+
 export const CharacterCountWithOverflow = Extension.create<
   CharacterCountWithOverflowOptions,
   CharacterCountWithOverflowStorage

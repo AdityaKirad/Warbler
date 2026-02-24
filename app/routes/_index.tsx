@@ -18,7 +18,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return null;
 }
 
-export default function HomePage() {
+export default function Page() {
   return (
     <div className="absolute inset-0 m-auto flex max-w-fit gap-8 px-4 max-lg:flex-col lg:max-h-fit">
       <div>
@@ -35,8 +35,8 @@ export default function HomePage() {
         />
       </div>
       <div className="font-bold">
-        <h1 className="text-auth-heading">Happening now</h1>
-        <h2 className="text-auth-sub-heading my-12">Join today</h2>
+        <h1 className="text-[2.5rem] sm:text-6xl">Happening now</h1>
+        <h2 className="mt-8 mb-4 text-4xl sm:text-5xl">Join today</h2>
         <div className="flex max-w-64 flex-col gap-2">
           <GoogleLogin />
           <DiscordLogin />
@@ -48,7 +48,7 @@ export default function HomePage() {
               Create Account
             </Link>
           </Button>
-          <h3 className="mt-12 mb-4">Already have an account?</h3>
+          <h3 className="mt-8 mb-4">Already have an account?</h3>
           <Button
             asChild
             className="rounded-full text-blue-500! hover:bg-blue-500/10 focus-visible:bg-blue-500/10 focus-visible:ring-blue-500"

@@ -2,8 +2,7 @@ import { bookmark, db, like, repost } from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "react-router";
-import { safeRedirect } from "remix-utils/safe-redirect";
-import type { Route } from "./+types/$tweetId.engagement";
+import type { Route } from "./+types/engagement";
 
 export async function action({
   request,
@@ -31,7 +30,9 @@ export async function action({
       });
   }
 
-  throw redirect(safeRedirect(formData.get("redirectTo"), "/home"));
+  const referer = request.headers.get("referer");
+
+  throw redirect(referer ?? "/home");
 }
 
 async function toggleBookmark({

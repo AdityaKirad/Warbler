@@ -1,18 +1,54 @@
 import { cn } from "~/lib/utils";
 import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import { forwardRef } from "react";
+import { forwardRef, useCallback, useEffect, useState } from "react";
+import { useDropdownMenuContext } from "./dropdown-menu";
 
 const dialogContentClassName =
   "bg-background fixed inset-0 z-50 m-auto flex size-full flex-col gap-4 px-16 py-2 shadow-lg duration-200 sm:max-h-(--container-xl) sm:max-w-lg sm:rounded-lg sm:border";
-
-const Dialog = DialogPrimitive.Root;
 
 const DialogTrigger = DialogPrimitive.Trigger;
 
 const DialogPortal = DialogPrimitive.Portal;
 
 const DialogClose = DialogPrimitive.Close;
+
+const Dialog = (props: React.ComponentProps<typeof DialogPrimitive.Root>) => {
+  const [open, openSet] = useState(props.open ?? false);
+  const dropdownMenuContext = useDropdownMenuContext();
+
+  const applyOpenState = useCallback(
+    (openState: boolean) => {
+      openSet(openState);
+
+      if (!openState) {
+        dropdownMenuContext.openSet(false);
+        dropdownMenuContext.menuHiddenSet(false);
+      } else {
+        dropdownMenuContext.menuHiddenSet(true);
+      }
+    },
+    [dropdownMenuContext],
+  );
+
+  useEffect(() => {
+    if (typeof props.open !== "boolean" || props.open === open) {
+      return;
+    }
+
+    applyOpenState(props.open);
+  }, [applyOpenState, open, props.open]);
+
+  const handleOpenChange = useCallback(
+    (openState: boolean) => {
+      applyOpenState(openState);
+      props.onOpenChange?.(openState);
+    },
+    [applyOpenState, props],
+  );
+
+  return <DialogPrimitive.Root onOpenChange={handleOpenChange} {...props} />;
+};
 
 const DialogOverlay = forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,

@@ -1,7 +1,7 @@
 import type { UserSelectType } from "~/.server/drizzle";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { getNameInitials } from "~/lib/utils";
-import type { loader } from "~/routes/_main+/$username+/_layout";
+import type { LayoutLoader } from "~/routes/_main+/$username+/_layout";
 import { BadgeCheckIcon } from "lucide-react";
 import { Link, useFetcher } from "react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -12,7 +12,7 @@ import {
 } from "../ui/hover-card";
 
 function useProfileHoverCardLoader(username: string) {
-  const fetcher = useFetcher<typeof loader>({
+  const fetcher = useFetcher<LayoutLoader>({
     key: `profile:${username}`,
   });
 
@@ -94,7 +94,7 @@ function ProfileHoverCard({
     | (Pick<
         UserSelectType,
         "name" | "username" | "photo" | "profileVerified" | "bio"
-      > & { following: number; followers: number })
+      > & { count: { following: number; followers: number } })
     | undefined;
 }) {
   return (
@@ -118,11 +118,11 @@ function ProfileHoverCard({
       <p>{data?.bio}</p>
       <div className="flex gap-2">
         <p>
-          {data?.following}{" "}
+          {data?.count.following}{" "}
           <span className="text-muted-foreground">Following</span>
         </p>
         <p>
-          {data?.followers}{" "}
+          {data?.count.followers}{" "}
           <span className="text-muted-foreground">Followers</span>
         </p>
       </div>

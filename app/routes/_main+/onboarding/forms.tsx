@@ -160,12 +160,12 @@ export function Username({
   const isPending = useIsPending();
   const fetcher = useFetcher<typeof action>();
   const usernameSuggestion = useFetcher<typeof loader>();
-  const { user } = useUser();
-  const [username, usernameSet] = useState(user.username);
+  const currentUser = useUser();
+  const [username, usernameSet] = useState(currentUser?.user.username);
   const [form, fields] = useForm({
     id: "username",
     defaultValue: {
-      username: user.username,
+      username,
     },
     lastResult: fetcher.data,
     constraint: getZodConstraint(usernameSchema),

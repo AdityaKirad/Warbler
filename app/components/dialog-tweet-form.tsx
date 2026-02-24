@@ -5,31 +5,27 @@ import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { getNameInitials } from "~/lib/utils";
 import { Link } from "react-router";
+import { CharCounter } from "./tweet-form/char-counter";
 import { EmojiPopover } from "./tweet-form/emoji-popover";
 import { useTweetForm } from "./tweet-form/use-tweet-form";
 
-export function DialogTweetForm({
-  onSuccess,
-  replyToTweetId,
-}: {
-  onSuccess?: () => void;
+export function DialogTweetForm(props: {
+  onSuccess: () => void;
+  onError: () => void;
   replyToTweetId?: string;
 }) {
-  const { charCount, editor, fetcher, isOverlimit, isPending, user } =
-    useTweetForm({ onSuccess });
+  const {
+    charCount,
+    maxCharCount,
+    editor,
+    fetcher,
+    isOverLimit,
+    isPending,
+    user,
+    handleSubmit,
+  } = useTweetForm(props);
   return (
-    <fetcher.Form
-      className="flex flex-col gap-2"
-      onSubmit={(evt) => {
-        evt.preventDefault();
-
-        const formData = new FormData();
-        if (replyToTweetId) {
-          formData.set("replyToTweetId", replyToTweetId);
-        }
-        formData.set("tweet", JSON.stringify(editor?.getJSON()));
-        fetcher.submit(formData, { method: "POST", action: "/tweet" });
-      }}>
+    <fetcher.Form className="flex flex-col gap-2" onSubmit={handleSubmit}>
       <div className="flex min-h-24 gap-2">
         <Avatar asChild>
           <Link to={user.username}>
@@ -48,14 +44,18 @@ export function DialogTweetForm({
         />
       </div>
       <Separator />
-      <div className="flex justify-between">
-        <div className="flex gap-2">
+      <div className="flex gap-2">
+        <div className="flex grow items-center gap-2">
           <EmojiPopover editor={editor} />
+          <CharCounter charCount={charCount} maxCharCount={maxCharCount} />
         </div>
+        {charCount > 0 && (
+          <Separator className="h-auto" orientation="vertical" />
+        )}
         <Button
           className="rounded-full px-6"
           type="submit"
-          disabled={!charCount || isOverlimit || isPending}>
+          disabled={!charCount || isOverLimit || isPending}>
           Post
         </Button>
       </div>

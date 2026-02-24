@@ -1,12 +1,13 @@
 import { cn } from "~/lib/utils";
+import { memo } from "react";
 import { NavLink } from "react-router";
 
-export function FeedTab({
+export const FeedTab = memo(function FeedTab({
   label,
   title,
   to,
 }: {
-  label: string;
+  label?: string;
   title: string;
   to: string;
 }) {
@@ -26,4 +27,4 @@ export function FeedTab({
       {title}
     </NavLink>
   );
-}
+});

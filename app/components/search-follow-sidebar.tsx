@@ -3,7 +3,9 @@ import { getNameInitials } from "~/lib/utils";
 import type { loader } from "~/routes/_main+/explore";
 import { SearchIcon } from "lucide-react";
 import { Link, useFetcher } from "react-router";
+import { DiscordLogin, GoogleLogin } from "./social-login";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Button } from "./ui/button";
 
 export function SearchFollowSidebar() {
   const fetcher = useFetcher<typeof loader>();
@@ -22,14 +24,15 @@ export function SearchFollowSidebar() {
           type="text"
           placeholder="Search"
           name="query"
-          onChange={(evt) =>
-            fetcher.load(
-              `/explore?query=${encodeURIComponent(evt.target.value)}`,
-            )
-          }
+          onChange={(evt) => {
+            const value = evt.target.value.trim();
+            if (value) {
+              fetcher.load(`/explore?query=${encodeURIComponent(value)}`);
+            }
+          }}
         />
       </fetcher.Form>
-      {fetcher.data?.length && (
+      {fetcher.data?.length ? (
         <ul className="absolute inset-x-0 top-16 rounded-lg border py-2">
           {fetcher.data.map((data) => (
             <li key={data.id}>
@@ -56,7 +59,25 @@ export function SearchFollowSidebar() {
             </li>
           ))}
         </ul>
-      )}
+      ) : null}
+    </div>
+  );
+}
+
+export function NonAuthenticatedSidebar() {
+  return (
+    <div className="max-tablet:hidden relative mr-4 w-64 pt-4 transition-[width] lg:mr-12 lg:w-80">
+      <div className="flex flex-col gap-3 rounded-lg border p-3">
+        <h3 className="text-lg font-bold">New to Warbler?</h3>
+        <p className="text-muted-foreground text-sm">
+          Sign up now to get your own timeline!
+        </p>
+        <GoogleLogin />
+        <DiscordLogin />
+        <Button className="rounded-full" asChild>
+          <Link to="/flow/signup">Create Account</Link>
+        </Button>
+      </div>
     </div>
   );
 }

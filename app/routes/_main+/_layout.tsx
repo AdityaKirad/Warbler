@@ -1,3 +1,4 @@
+import type { UserSelectType } from "~/.server/drizzle";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import Logo from "~/assets/logo-small.webp";
 import { DialogTweetForm } from "~/components/dialog-tweet-form";
@@ -34,70 +35,105 @@ import { cn, getNameInitials } from "~/lib/utils";
 import {
   getNextOnboardingStep,
   hasStepsAfterCurrent,
+  type OnboardingStep,
 } from "~/routes/_main+/onboarding/config";
 import { MoreHorizontalIcon, SearchIcon } from "lucide-react";
-import { useState } from "react";
-import { NavLink, Outlet } from "react-router";
+import { memo, useEffect, useState } from "react";
+import { data, NavLink, Outlet } from "react-router";
+import { toast } from "sonner";
+import type { Route } from "./+types/_layout";
 import { DOB, ProfilePhoto, Username } from "./onboarding/forms";
+import { deletePostToastCookie } from "./tweet+/$tweetId+/delete";
 
 type NavItemProps = {
   title: string;
-  to: string;
+  to: string | ((username: string) => string);
   Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   ActiveIcon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   className?: string;
 };
 
-export default function Layout() {
-  const { user } = useUser();
-  const onboardingStep = getNextOnboardingStep(user.onboardingStepsCompleted);
-  const links: NavItemProps[] = [
+const links: NavItemProps[] = [
+  {
+    to: "/home",
+    title: "Home",
+    Icon: HomeOutlinedIcon,
+    ActiveIcon: HomeSolidIcon,
+  },
+  {
+    to: "/explore",
+    title: "Explore",
+    Icon: SearchIcon,
+    ActiveIcon: SearchIcon,
+  },
+  {
+    to: "/notifications",
+    title: "Notifications",
+    Icon: NotificationOutlinedIcon,
+    ActiveIcon: NotificationSolidIcon,
+  },
+  {
+    to: "/chat",
+    title: "Chat",
+    Icon: MessageOutlinedIcon,
+    ActiveIcon: MessageSolidIcon,
+  },
+  {
+    to: (username) => `/${username}`,
+    title: "Profile",
+    Icon: UserOutlinedIcon,
+    ActiveIcon: UserSolidIcon,
+    className: "max-[30rem]:hidden",
+  },
+  {
+    to: `/bookmarks`,
+    title: "Bookmarks",
+    Icon: BookmarkOutlinedIcon,
+    ActiveIcon: BookmarkSolidIcon,
+    className: "max-[30rem]:hidden",
+  },
+  {
+    to: "/settings",
+    title: "Settings",
+    Icon: SettingsOutlinedIcon,
+    ActiveIcon: SettingsSolidIcon,
+    className: "max-[30rem]:hidden",
+  },
+];
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const toastValue = await deletePostToastCookie.parse(
+    request.headers.get("cookie"),
+  );
+  return data(
+    { toastValue },
     {
-      to: "/home",
-      title: "Home",
-      Icon: HomeOutlinedIcon,
-      ActiveIcon: HomeSolidIcon,
+      headers: toastValue
+        ? {
+            "set-cookie": await deletePostToastCookie.serialize("", {
+              maxAge: -1,
+            }),
+          }
+        : {},
     },
-    {
-      to: "/explore",
-      title: "Explore",
-      Icon: SearchIcon,
-      ActiveIcon: SearchIcon,
-    },
-    {
-      to: "/notifications",
-      title: "Notifications",
-      Icon: NotificationOutlinedIcon,
-      ActiveIcon: NotificationSolidIcon,
-    },
-    {
-      to: "/chat",
-      title: "Chat",
-      Icon: MessageOutlinedIcon,
-      ActiveIcon: MessageSolidIcon,
-    },
-    {
-      to: `/${user.username}`,
-      title: "Profile",
-      Icon: UserOutlinedIcon,
-      ActiveIcon: UserSolidIcon,
-      className: "max-[30rem]:hidden",
-    },
-    {
-      to: `/bookmarks`,
-      title: "Bookmarks",
-      Icon: BookmarkOutlinedIcon,
-      ActiveIcon: BookmarkSolidIcon,
-      className: "max-[30rem]:hidden",
-    },
-    {
-      to: "/settings",
-      title: "Settings",
-      Icon: SettingsOutlinedIcon,
-      ActiveIcon: SettingsSolidIcon,
-      className: "max-[30rem]:hidden",
-    },
-  ];
+  );
+}
+
+export default function Layout({ loaderData }: Route.ComponentProps) {
+  const user = useUser()?.user;
+  const onboardingStep = getNextOnboardingStep(user?.onboardingStepsCompleted);
+  const hasNextStep = hasStepsAfterCurrent(user?.onboardingStepsCompleted);
+  useEffect(() => {
+    if (!loaderData?.toastValue) {
+      return;
+    }
+
+    if (loaderData.toastValue === "success") {
+      toast("Your post was deleted");
+    } else {
+      toast.error("Something went wrong. Please try again.");
+    }
+  }, [loaderData?.toastValue]);
   return (
     <div className="flex h-full">
       <div className="basis flex shrink-0 grow flex-col items-end">
@@ -117,18 +153,28 @@ export default function Layout() {
               />
             </NavLink>
 
-            {links.map((link) => (
-              <NavItem key={link.title} {...link} />
-            ))}
+            {user
+              ? links.map(({ title, to, ...props }) => (
+                  <NavItem
+                    key={title}
+                    to={typeof to === "function" ? to(user.username) : to}
+                    title={title}
+                    {...props}
+                  />
+                ))
+              : null}
 
-            <PostTweetDialog />
-
-            <UserDropdown />
+            {user && (
+              <>
+                <PostTweetDialog />
+                <UserDropdown user={user} />
+              </>
+            )}
           </nav>
         </div>
       </div>
       <div className="flex h-full shrink grow flex-col">
-        <main className="mobile:w-150 tablet:w-225 size-full transition-[width] lg:w-250">
+        <div className="mobile:w-150 tablet:w-225 size-full transition-[width] lg:w-250">
           {onboardingStep ? (
             <div className="bg-muted/60 fixed inset-0">
               <div className={dialogContentClassName}>
@@ -141,36 +187,41 @@ export default function Layout() {
                   width={56}
                   height={56}
                 />
-                <OnboardingStep />
+                <OnboardingStep
+                  step={onboardingStep}
+                  hasNextStep={hasNextStep}
+                />
               </div>
             </div>
           ) : (
             <Outlet />
           )}
-        </main>
+        </div>
       </div>
     </div>
   );
 }
 
-function OnboardingStep() {
-  const { user } = useUser();
-  const onboardingStep = getNextOnboardingStep(user.onboardingStepsCompleted);
-  const hasNextStep = hasStepsAfterCurrent(user.onboardingStepsCompleted);
-  switch (onboardingStep?.id) {
+function OnboardingStep({
+  step,
+  hasNextStep,
+}: {
+  hasNextStep: boolean;
+  step: OnboardingStep;
+}) {
+  switch (step?.id) {
     case "dob":
-      return <DOB {...onboardingStep} hasNextStep={hasNextStep} />;
+      return <DOB hasNextStep={hasNextStep} {...step} />;
     case "profile-photo":
-      return <ProfilePhoto {...onboardingStep} hasNextStep={hasNextStep} />;
+      return <ProfilePhoto hasNextStep={hasNextStep} {...step} />;
     case "verify-email":
-      break;
+      return null;
     case "username":
-      return <Username {...onboardingStep} hasNextStep={hasNextStep} />;
+      return <Username hasNextStep={hasNextStep} {...step} />;
   }
 }
 
-function UserDropdown() {
-  const { user } = useUser();
+function UserDropdown({ user }: { user: UserSelectType }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -227,13 +278,22 @@ function PostTweetDialog() {
         </Button>
       </DialogTrigger>
       <DialogContent className="h-fit px-4 pt-12 pb-4">
-        <DialogTweetForm onSuccess={() => dialogSet(false)} />
+        <DialogTweetForm
+          onError={() => dialogSet(false)}
+          onSuccess={() => dialogSet(false)}
+        />
       </DialogContent>
     </Dialog>
   );
 }
 
-function NavItem({ title, to, Icon, ActiveIcon, className }: NavItemProps) {
+const NavItem = memo(function ({
+  title,
+  to,
+  Icon,
+  ActiveIcon,
+  className,
+}: Omit<NavItemProps, "to"> & { to: string }) {
   return (
     <NavLink
       className={cn("group outline-none", className)}
@@ -256,4 +316,6 @@ function NavItem({ title, to, Icon, ActiveIcon, className }: NavItemProps) {
       }}
     </NavLink>
   );
-}
+});
+
+NavItem.displayName = "NavItem";

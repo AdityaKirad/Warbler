@@ -6,6 +6,7 @@
   --breakpoint-tablet: 61.875rem;
   --breakpoint-mobile: 42.5rem;
   --animate-spinner: spinner 1.5s ease-out infinite;
+  --animate-skeleton: skeleton 1s linear infinite;
 
   @keyframes spinner {
     0% {
@@ -20,6 +21,15 @@
     100% {
       stroke-dasharray: 42 150;
       stroke-dashoffset: -59;
+    }
+  }
+
+  @keyframes skeleton {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
     }
   }
 }
@@ -47,10 +57,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --text-body: var(--fs-body);
   --text-heading: var(--fs-heading);
-  --text-auth-heading: var(--fs-auth-heading);
-  --text-auth-sub-heading: var(--fs-auth-sub-heading);
 }
 
 :root {
@@ -73,28 +80,10 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.552 0.016 285.938);
+  --fs-heading: 1.125rem;
 
-  /* For browsers that support clamp  */
-  @supports (font-size: clamp(1rem, 1vi, 1rem)) {
-    --fs-body: clamp(0.88rem, 0.67vi + 0.61rem, 1.25rem);
-    --fs-heading: clamp(1.09rem, 0.84vi + 0.76rem, 1.56rem);
-    --fs-auth-sub-heading: clamp(2.14rem, 1.63vi + 1.48rem, 3.05rem);
-    --fs-auth-heading: clamp(2.67rem, 2.04vi + 1.85rem, 3.81rem);
-  }
-
-  /* For browsers that don't support clamp */
-  @supports not (font-size: clamp(1rem, 1vi, 1rem)) {
-    --fs-body: 0.88rem;
-    --fs-heading: 1.09rem;
-    --fs-auth-sub-heading: 2.14rem;
-    --fs-auth-heading: 2.67rem;
-
-    @media (min-width: 1280px) {
-      --fs-body: 1.25rem;
-      --fs-heading: 1.56rem;
-      --fs-auth-sub-heading: 3.05rem;
-      --fs-auth-heading: 3.81rem;
-    }
+  @media (min-width: 40rem) {
+    --fs-heading: 1.5rem;
   }
 }
 

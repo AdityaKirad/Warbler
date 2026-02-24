@@ -17,18 +17,26 @@ const MentionWithBackspace = Mention.extend({
         const { state } = this.editor;
         const { selection } = state;
         const { empty, anchor } = selection;
-        if (!empty) return false;
 
-        let mentionNode: PMNode | null = null;
+        if (!empty) {
+          return false;
+        }
+
+        let mentionNode = null;
         let mentionPos = 0;
+
         state.doc.nodesBetween(anchor - 1, anchor, (node, pos) => {
           if (node.type.name === this.name) {
-            mentionNode = node as PMNode;
+            mentionNode = node;
             mentionPos = pos;
             return false;
           }
         });
-        if (!mentionNode) return false;
+
+        if (!mentionNode) {
+          return false;
+        }
+
         const node = mentionNode as PMNode;
 
         const attrs = node.attrs as {
@@ -63,7 +71,7 @@ export const extensions = [
   MentionWithBackspace.configure({
     renderHTML({ node, options }) {
       return [
-        "a",
+        "span",
         mergeAttributes(
           { class: "text-blue-500", href: `/${node.attrs.id}` },
           options.HTMLAttributes,

@@ -8,6 +8,7 @@ import {
   useRouteError,
 } from "react-router";
 import "./tailwind.css";
+import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "./.server/honeypot";
 import { getUser } from "./.server/utils";
@@ -60,7 +61,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App({ loaderData }: Route.ComponentProps) {
   return (
     <HoneypotProvider {...loaderData.honeypotProps}>
-      <Outlet context={loaderData.user} />
+      <NuqsAdapter>
+        <Outlet context={loaderData.user} />
+      </NuqsAdapter>
     </HoneypotProvider>
   );
 }

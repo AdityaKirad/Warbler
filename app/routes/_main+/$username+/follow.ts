@@ -1,8 +1,7 @@
-import { db, follows } from "~/.server/drizzle";
+import { db, follows, user } from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { redirect } from "react-router";
-import { safeRedirect } from "remix-utils/safe-redirect";
 import type { Route } from "./+types/follow";
 
 export async function action({ request, params }: Route.ActionArgs) {
@@ -10,8 +9,7 @@ export async function action({ request, params }: Route.ActionArgs) {
     user: { id: userId },
   } = await requireUser(request);
 
-  const formData = await request.formData();
-  const followingId = formData.get("id") as string;
+  const followingId = sql<string>`(SELECT ${user.id} FROM ${user} WHERE ${user.username} = ${params.username})`;
 
   await db.transaction(async (tx) => {
     const result = await tx
@@ -32,7 +30,7 @@ export async function action({ request, params }: Route.ActionArgs) {
     }
   });
 
-  throw redirect(
-    safeRedirect(formData.get("redirectTo"), `/${params.username}`),
-  );
+  const referer = request.headers.get("referer");
+
+  throw redirect(referer ?? "/home");
 }
