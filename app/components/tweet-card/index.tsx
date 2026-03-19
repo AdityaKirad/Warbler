@@ -6,47 +6,48 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { formatTweetDate } from "~/lib/utils";
-import type { action } from "~/routes/_main+/tweet+/$tweetId+/engagement";
+import { cn, formatTweetDate } from "~/lib/utils";
 import { format } from "date-fns";
 import { useFetcher, useLocation, useNavigate } from "react-router";
-import { extensions } from "../tweet-form";
+import { extensions, mentionNodeLinkMapping } from "../tweet-form";
 import { CommentButton } from "./comment-button";
+import { LikeButton } from "./like-button";
 import { MoreOptionDropdownMenu } from "./more-option-dropdown-menu";
 import { RepostButton } from "./repost-button";
-import {
-  BookmarkButton,
-  LikeButton,
-  ViewsButton,
-} from "./tweet-engagement-buttons";
+import { BookmarkButton, ViewsButton } from "./tweet-engagement-buttons";
 import { TweetUserAvatar, TweetUserDetails } from "./tweet-user-profile-hover";
 
 export function TweetCard({
   id,
   content,
-  views,
   createdAt,
+  disabled,
   following,
-  user,
+  showBookmarkCount,
+  views,
   count,
   viewer,
+  user,
 }: Pick<TweetSelectType, "id" | "content" | "views" | "createdAt"> & {
+  disabled?: boolean;
   following?: boolean;
+  showBookmarkCount?: boolean;
   user: Pick<UserSelectType, "name" | "username" | "photo">;
   count: {
     likes: number;
     replies: number;
     reposts: number;
   };
-  viewer: {
+  viewer?: {
     bookmarked: boolean;
     liked: boolean;
     reposted: boolean;
   };
 }) {
-  const fetcher = useFetcher<typeof action>();
+  const fetcher = useFetcher();
   const location = useLocation();
   const navigate = useNavigate();
+
   const engagementFormId = `post-${id}-engagement`;
 
   function navigateToTweet(
@@ -77,7 +78,12 @@ export function TweetCard({
   return (
     // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <article
-      className="hover:bg-muted/10 focus-visible:bg-muted/10 flex cursor-pointer gap-2 border-b px-4 py-2 outline-2 outline-transparent transition-colors focus-visible:outline-blue-300"
+      className={cn(
+        "hover:bg-muted/10 focus-visible:bg-muted/10 flex cursor-pointer gap-2 border-b px-4 py-2 outline-2 outline-transparent transition-colors focus-visible:outline-blue-300",
+        {
+          "pointer-events-none opacity-50": disabled,
+        },
+      )}
       // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
       tabIndex={0}
       onClick={navigateToTweet}
@@ -112,13 +118,14 @@ export function TweetCard({
           {renderToReactElement({
             content,
             extensions,
+            options: { nodeMapping: mentionNodeLinkMapping },
           })}
         </div>
         <fetcher.Form
           className="flex justify-between"
           method="POST"
           id={engagementFormId}
-          action={`/tweet/${id}/engagement`}>
+          action={`/tweet/${id}/interaction`}>
           <CommentButton
             body={content}
             createdAt={createdAt}
@@ -127,13 +134,22 @@ export function TweetCard({
             user={user}
           />
           <RepostButton
-            formId={engagementFormId}
-            reposted={viewer.reposted}
+            tweetId={id}
+            reposted={viewer?.reposted}
             repostCount={count.reposts}
+            fetcher={fetcher}
           />
-          <LikeButton liked={viewer.liked} likeCount={count.likes} />
+          <LikeButton
+            fetcher={fetcher}
+            liked={viewer?.liked}
+            count={count.likes}
+          />
           <ViewsButton views={views} />
-          <BookmarkButton bookmarked={viewer.bookmarked} />
+          <BookmarkButton
+            fetcher={fetcher}
+            bookmarked={viewer?.bookmarked}
+            showBookmarkCount={showBookmarkCount}
+          />
           <input type="hidden" name="redirectTo" value={location.pathname} />
         </fetcher.Form>
       </div>

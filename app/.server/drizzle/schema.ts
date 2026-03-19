@@ -64,7 +64,7 @@ export const account = sqliteTable(
   },
   (table) => [
     index("account_user_id_idx").on(table.userId),
-    uniqueIndex("account_provider_provider_id_unique_idx").on(
+    uniqueIndex("account_provider_provider_id_unique").on(
       table.provider,
       table.providerId,
     ),
@@ -112,20 +112,48 @@ export const tweet = sqliteTable(
       .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
     content: text({ mode: "json" }).$type<Record<string, unknown>>().notNull(),
     text: text().notNull(),
-    replyToTweetId: text().references((): AnySQLiteColumn => tweet.id),
+    replyToTweetId: text().references((): AnySQLiteColumn => tweet.id, {
+      onDelete: "no action",
+    }),
     quotedTweetId: text().references((): AnySQLiteColumn => tweet.id),
     views: integer().notNull().default(0),
     createdAt: timestamps.createdAt,
   },
   (table) => [
-    index("tweet_user_id_idx").on(table.userId),
-    index("tweet_reply_to_tweet_id_idx").on(table.replyToTweetId),
+    index("tweet_user_timeline_idx").on(table.userId, table.createdAt),
+    index("tweet_reply_sort_idx").on(table.replyToTweetId, table.createdAt),
     index("tweet_quoted_tweet_id_idx").on(table.quotedTweetId),
   ],
 );
 
-export const follows = sqliteTable(
-  "follows",
+export const tweetInteraction = sqliteTable(
+  "tweet_interaction",
+  {
+    tweetId: text()
+      .notNull()
+      .references(() => tweet.id, { onDelete: "cascade" }),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    type: text({ enum: ["bookmark", "like", "repost"] }).notNull(),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [
+    primaryKey({
+      name: "tweet_interaction_pk",
+      columns: [table.tweetId, table.userId, table.type],
+    }),
+    index("tweet_interaction_user_type_created_idx").on(
+      table.userId,
+      table.type,
+      table.createdAt,
+    ),
+    index("tweet_interaction_tweet_type_idx").on(table.tweetId, table.type),
+  ],
+);
+
+export const userFollow = sqliteTable(
+  "user_follow",
   {
     followerId: text("follower_id")
       .notNull()
@@ -133,90 +161,25 @@ export const follows = sqliteTable(
     followingId: text("following_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
+    createdAt: timestamps.createdAt,
   },
   (table) => [
     primaryKey({
       name: "follows_follower_id_following_id_primary_key",
       columns: [table.followerId, table.followingId],
     }),
-    index("follows_follower_id_idx").on(table.followerId),
-    index("follows_following_id_idx").on(table.followingId),
-  ],
-);
-
-export const like = sqliteTable(
-  "like",
-  {
-    tweetId: text()
-      .notNull()
-      .references(() => tweet.id, { onDelete: "cascade", onUpdate: "cascade" }),
-    userId: text()
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
-  },
-  (table) => [
-    primaryKey({
-      name: "like_tweet_id_user_id_primary_key",
-      columns: [table.tweetId, table.userId],
-    }),
-    index("like_tweet_id_idx").on(table.tweetId),
-    index("like_user_id_idx").on(table.userId),
-  ],
-);
-
-export const repost = sqliteTable(
-  "repost",
-  {
-    tweetId: text()
-      .notNull()
-      .references(() => tweet.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade",
-      }),
-    userId: text()
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
-  },
-  (table) => [
-    primaryKey({
-      name: "repost_tweet_id_user_id_primary_key",
-      columns: [table.tweetId, table.userId],
-    }),
-    index("repost_tweet_id_idx").on(table.tweetId),
-    index("repost_user_id_idx").on(table.userId),
-  ],
-);
-
-export const bookmark = sqliteTable(
-  "bookmark",
-  {
-    tweetId: text()
-      .notNull()
-      .references(() => tweet.id, { onDelete: "cascade", onUpdate: "cascade" }),
-    userId: text()
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
-  },
-  (table) => [
-    primaryKey({
-      name: "bookmark_tweet_id_user_id_primary_key",
-      columns: [table.tweetId, table.userId],
-    }),
-    index("bookmark_tweet_id_idx").on(table.tweetId),
-    index("bookmark_user_id_idx").on(table.userId),
+    index("user_follow_following_id_idx").on(table.followingId),
   ],
 );
 
 export const userRelations = relations(user, ({ many }) => ({
   accounts: many(account),
-  bookmarks: many(bookmark),
-  follows: many(follows, {
-    relationName: "UserFollows",
-  }),
-  likes: many(like),
-  reposts: many(repost),
   sessions: many(session),
   tweets: many(tweet),
+  tweetInteractions: many(tweetInteraction),
+  userFollow: many(userFollow, {
+    relationName: "UserFollows",
+  }),
 }));
 
 export const accountRelations = relations(account, ({ one }) => ({
@@ -235,25 +198,22 @@ export const sessionRelations = relations(session, ({ one }) => ({
   }),
 }));
 
-export const followsRelations = relations(follows, ({ one }) => ({
+export const followsRelations = relations(userFollow, ({ one }) => ({
   follower: one(user, {
     relationName: "UserFollows",
-    fields: [follows.followerId],
+    fields: [userFollow.followerId],
     references: [user.id],
   }),
   following: one(user, {
     relationName: "UserFollowing",
-    fields: [follows.followingId],
+    fields: [userFollow.followingId],
     references: [user.id],
   }),
 }));
 
 export const tweetRelations = relations(tweet, ({ one, many }) => ({
-  bookmarks: many(bookmark),
-  likes: many(like),
-  reposts: many(repost),
-
-  replyToTweet: one(tweet, {
+  tweetInteractions: many(tweetInteraction),
+  parentTweet: one(tweet, {
     relationName: "TweetReplies",
     fields: [tweet.replyToTweetId],
     references: [tweet.id],
@@ -266,7 +226,7 @@ export const tweetRelations = relations(tweet, ({ one, many }) => ({
     fields: [tweet.quotedTweetId],
     references: [tweet.id],
   }),
-  quoteTweet: many(tweet, {
+  quotes: many(tweet, {
     relationName: "TweetQuotes",
   }),
   user: one(user, {
@@ -276,49 +236,29 @@ export const tweetRelations = relations(tweet, ({ one, many }) => ({
   }),
 }));
 
-export const likeRelations = relations(like, ({ one }) => ({
-  tweet: one(tweet, {
-    relationName: "LikeToTweet",
-    fields: [like.tweetId],
-    references: [tweet.id],
+export const tweetInteractionRelations = relations(
+  tweetInteraction,
+  ({ one }) => ({
+    tweet: one(tweet, {
+      relationName: "InteractionToTweet",
+      fields: [tweetInteraction.tweetId],
+      references: [tweet.id],
+    }),
+    user: one(user, {
+      relationName: "InteractionToUser",
+      fields: [tweetInteraction.userId],
+      references: [user.id],
+    }),
   }),
-  user: one(user, {
-    relationName: "LikeToUser",
-    fields: [like.userId],
-    references: [user.id],
-  }),
-}));
+);
 
-export const repostRelations = relations(repost, ({ one }) => ({
-  tweet: one(tweet, {
-    relationName: "RepostToTweet",
-    fields: [repost.tweetId],
-    references: [tweet.id],
-  }),
-  user: one(user, {
-    relationName: "RepostToUser",
-    fields: [repost.userId],
-    references: [user.id],
-  }),
-}));
-
-export const bookmarkRelations = relations(bookmark, ({ one }) => ({
-  tweet: one(tweet, {
-    relationName: "BookmarkToTweet",
-    fields: [bookmark.tweetId],
-    references: [tweet.id],
-  }),
-  user: one(user, {
-    relationName: "BookmarkToUser",
-    fields: [bookmark.userId],
-    references: [user.id],
-  }),
-}));
-
-export type AccountSelectType = InferSelectModel<typeof account>;
-export type AccountInsertType = InferInsertModel<typeof account>;
 export type UserInsertType = InferInsertModel<typeof user>;
 export type UserSelectType = InferSelectModel<typeof user>;
+export type AccountInsertType = InferInsertModel<typeof account>;
 export type SessionSelectType = InferSelectModel<typeof session>;
 export type VerificationsSelectType = InferSelectModel<typeof verification>;
 export type TweetSelectType = InferSelectModel<typeof tweet>;
+export type TweetInteractionSelectType = InferSelectModel<
+  typeof tweetInteraction
+>;
+export type UserFollowSelectType = InferSelectModel<typeof userFollow>;

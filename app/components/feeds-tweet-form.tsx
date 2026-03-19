@@ -1,6 +1,6 @@
 import { EditorContent } from "@tiptap/react";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
-import { getNameInitials } from "~/lib/utils";
+import { cn, getNameInitials } from "~/lib/utils";
 import { Link, useSearchParams } from "react-router";
 import { ClientOnly } from "remix-utils/client-only";
 import { EmojiPopover, useTweetForm } from "./tweet-form";
@@ -9,7 +9,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 
-export function FeedsTweetForm() {
+export function FeedsTweetForm({
+  replyTo,
+  removePaddingAndBorders,
+}: {
+  removePaddingAndBorders?: boolean;
+  replyTo?: { id: string; username: string };
+}) {
   const {
     user,
     editor,
@@ -19,13 +25,15 @@ export function FeedsTweetForm() {
     isPending,
     isOverLimit,
     handleSubmit,
-  } = useTweetForm();
+  } = useTweetForm({ replyToTweetId: replyTo?.id });
   const [searchParams] = useSearchParams();
   const content = searchParams.get("tweet_content");
   const error = searchParams.get("tweet_error");
   return (
     <fetcher.Form
-      className="flex gap-2 border-b px-4 py-2"
+      className={cn("flex gap-2", {
+        "border-b px-4 py-2": !removePaddingAndBorders,
+      })}
       method="POST"
       action="/tweet"
       onSubmit={handleSubmit}>
@@ -58,13 +66,15 @@ export function FeedsTweetForm() {
             <EditorContent className="peer [&>div]:min-h-12" editor={editor} />
           )}
         </ClientOnly>
-        <Separator />
+        {!removePaddingAndBorders && <Separator />}
         <div className="flex gap-2">
           <div className="flex grow items-center gap-2">
             <EmojiPopover editor={editor} />
             <CharCounter charCount={charCount} maxCharCount={maxCharCount} />
           </div>
-          {charCount > 0 && <Separator orientation="vertical" />}
+          {!removePaddingAndBorders
+            ? charCount > 0 && <Separator orientation="vertical" />
+            : null}
           <Button
             className="rounded-full px-6"
             type="submit"

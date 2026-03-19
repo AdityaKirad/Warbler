@@ -1,9 +1,9 @@
-import { bookmark, db, follows, like, repost, tweet } from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
+import { Spinner } from "~/components/spinner";
 import { TweetCard } from "~/components/tweet-card";
-import { useUser } from "~/hooks/use-user";
-import { eq, sql } from "drizzle-orm";
+import { useInfiniteTweetsScroll } from "~/hooks/use-infinite-tweets-scroll";
 import { redirect } from "react-router";
+import { getUserLikedPosts, PAGE_SIZE } from "../feed-queries.server";
 import type { Route } from "./+types/likes";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
@@ -13,59 +13,40 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     throw redirect(params.username);
   }
 
-  const replies = db
-    .$with("replies")
-    .as(db.select({ replyToTweetId: tweet.replyToTweetId }).from(tweet));
+  const url = new URL(request.url);
+  const cursor = url.searchParams.get("cursor");
 
-  const likes = await db
-    .with(replies)
-    .select({
-      id: tweet.id,
-      content: tweet.content,
-      views: tweet.views,
-      createdAt: tweet.createdAt,
+  const tweets = await getUserLikedPosts({ cursor, userId: user.id });
 
-      following: sql<boolean>`EXISTS(SELECT 1 FROM ${follows} WHERE ${follows.followingId} = ${user.id} AND ${follows.followerId} = ${user.id})`,
-
-      count: {
-        likes: db.$count(like, eq(like.tweetId, tweet.id)),
-        replies: db.$count(replies, eq(replies.replyToTweetId, tweet.id)),
-        reposts: db.$count(repost, eq(repost.tweetId, tweet.id)),
-      },
-
-      viewer: {
-        bookmarked:
-          sql<boolean>`EXISTS(SELECT 1 FROM ${bookmark} WHERE ${bookmark.tweetId} = ${tweet.id} AND ${bookmark.userId} = ${user.id})`.as(
-            "has_bookmarked",
-          ),
-        liked:
-          sql<boolean>`EXISTS(SELECT 1 FROM ${like} WHERE ${like.tweetId} = ${tweet.id} AND ${like.userId} = ${user.id})`.as(
-            "has_liked",
-          ),
-        reposted:
-          sql<boolean>`EXISTS(SELECT 1 FROM ${repost} WHERE ${repost.tweetId} = ${tweet.id} AND ${repost.userId} = ${user.id})`.as(
-            "has_reposted",
-          ),
-      },
-    })
-    .from(like)
-    .innerJoin(tweet, eq(tweet.id, like.tweetId))
-    .where(eq(like.userId, user.id));
-
-  return { likes };
+  return {
+    tweets,
+    hasMore: tweets.length === PAGE_SIZE,
+    nextCursor:
+      tweets.length > 0
+        ? tweets[tweets.length - 1]?.createdAt.toISOString()
+        : null,
+  };
 }
 
-export default function Page({ loaderData: { likes } }: Route.ComponentProps) {
-  const user = useUser()!;
-  return likes.map((tweet) => (
-    <TweetCard
-      key={tweet.id}
-      user={{
-        name: user.user.name,
-        username: user.user.username,
-        photo: user.user.photo,
-      }}
-      {...tweet}
-    />
-  ));
+export default function Page({ loaderData }: Route.ComponentProps) {
+  const { fetcher, loadMoreRef, tweets } = useInfiniteTweetsScroll(loaderData);
+
+  return (
+    <>
+      {tweets.map((tweet) => (
+        <TweetCard
+          key={tweet.id}
+          {...tweet}
+          viewer={{
+            ...tweet.viewer,
+            liked: true,
+          }}
+        />
+      ))}
+      <div ref={loadMoreRef} aria-hidden />
+      {fetcher.state === "loading" && (
+        <Spinner className="mx-auto my-8 text-blue-500" />
+      )}
+    </>
+  );
 }

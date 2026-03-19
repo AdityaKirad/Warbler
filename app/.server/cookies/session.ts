@@ -5,7 +5,7 @@ const options = {
   maxAge: 30 * 24 * 60 * 60,
   path: "/",
   sameSite: "lax",
-  secrets: process.env.NODE_ENV.split(", "),
+  secrets: process.env.AUTH_SECRET.split(", "),
   secure: process.env.NODE_ENV === "production",
 } as const;
 

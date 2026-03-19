@@ -1,23 +1,16 @@
-import {
-  bookmark,
-  db,
-  follows,
-  like,
-  repost,
-  tweet,
-  user,
-} from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
 import { PageTitle } from "~/components/page-title";
 import { SearchFollowSidebar } from "~/components/search-follow-sidebar";
 import { Spinner } from "~/components/spinner";
 import { TweetCard } from "~/components/tweet-card";
-import { desc, eq, sql } from "drizzle-orm";
+import { useInfiniteTweetsScroll } from "~/hooks/use-infinite-tweets-scroll";
 import Fuse from "fuse.js";
 import { SearchIcon } from "lucide-react";
 import { useQueryState } from "nuqs";
+import { useMemo } from "react";
 import { useNavigation } from "react-router";
 import type { Route } from "./+types/bookmarks";
+import { getBookmarksFeed, PAGE_SIZE } from "./feed-queries.server";
 
 export const meta = () => [
   {
@@ -26,69 +19,41 @@ export const meta = () => [
 ];
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const { user: currentUser } = await requireUser(request);
+  const {
+    user: { id: userId },
+  } = await requireUser(request);
 
-  const replies = db
-    .$with("replies")
-    .as(db.select({ replyToTweetId: tweet.replyToTweetId }).from(tweet));
+  const url = new URL(request.url);
+  const cursor = url.searchParams.get("cursor");
 
-  const bookmarks = await db
-    .with(replies)
-    .select({
-      id: tweet.id,
-      content: tweet.content,
-      views: tweet.views,
-      createdAt: tweet.createdAt,
+  const tweets = await getBookmarksFeed({ cursor, userId });
 
-      following: sql<boolean>`EXISTS(SELECT 1 FROM ${follows} WHERE ${follows.followingId} = ${user.id} AND ${follows.followerId} = ${currentUser.id})`,
-
-      count: {
-        likes: db.$count(like, eq(like.tweetId, tweet.id)),
-        replies: db.$count(replies, eq(replies.replyToTweetId, tweet.id)),
-        reposts: db.$count(repost, eq(repost.tweetId, tweet.id)),
-      },
-
-      viewer: {
-        liked:
-          sql<boolean>`EXISTS(SELECT 1 FROM ${like} WHERE ${like.tweetId} = ${tweet.id} AND ${like.userId} = ${user.id})`.as(
-            "has_liked",
-          ),
-        reposted:
-          sql<boolean>`EXISTS(SELECT 1 FROM ${repost} WHERE ${repost.tweetId} = ${tweet.id} AND ${repost.userId} = ${user.id})`.as(
-            "has_reposted",
-          ),
-      },
-
-      user: {
-        name: user.name,
-        username: user.username,
-        photo: user.photo,
-      },
-    })
-    .from(bookmark)
-    .innerJoin(tweet, eq(bookmark.tweetId, tweet.id))
-    .innerJoin(user, eq(tweet.userId, user.id))
-    .where(eq(bookmark.userId, currentUser.id))
-    .orderBy(desc(tweet.createdAt));
-
-  return { bookmarks };
+  return {
+    tweets,
+    hasMore: tweets.length === PAGE_SIZE,
+    nextCursor:
+      tweets.length > 0
+        ? tweets[tweets.length - 1]?.createdAt.toISOString()
+        : null,
+  };
 }
 
-export default function Page({
-  loaderData: { bookmarks },
-}: Route.ComponentProps) {
-  // const [searchParams, searchParamsSet] = useSearchParams();
-  const navigation = useNavigation();
-  // const query = searchParams.get("query") ?? "";
+export default function Page({ loaderData }: Route.ComponentProps) {
   const [search, searchSet] = useQueryState("query");
-  const fuse = new Fuse(bookmarks, {
-    keys: ["user.name", "user.username"],
-  });
+  const { fetcher, loadMoreRef, tweets } = useInfiniteTweetsScroll(loaderData);
+  const navigation = useNavigation();
+  const fuse = useMemo(
+    () =>
+      new Fuse(tweets, {
+        keys: ["user.name", "user.username"],
+      }),
+    [tweets],
+  );
   const results = fuse.search(search ?? "").map((res) => res.item);
   const isSearching = navigation.state !== "idle";
   return (
     <div className="flex min-h-screen justify-between">
-      <div className="w-150 min-h-screen border-x">
+      <div className="min-h-screen w-150 border-x">
         <PageTitle title="Bookmarks" />
         <div className="my-2 px-4">
           <div className="relative flex h-10 items-center">
@@ -128,16 +93,20 @@ export default function Page({
             </div>
           )
         ) : (
-          bookmarks.map((bookmark) => (
+          tweets.map((tweet) => (
             <TweetCard
-              key={bookmark.id}
-              {...bookmark}
+              key={tweet.id}
+              {...tweet}
               viewer={{
-                ...bookmark.viewer,
+                ...tweet.viewer,
                 bookmarked: true,
               }}
             />
           ))
+        )}
+        <div ref={loadMoreRef} aria-hidden />
+        {fetcher.state === "loading" && (
+          <Spinner className="mx-auto my-8 text-blue-500" />
         )}
       </div>
       <SearchFollowSidebar />

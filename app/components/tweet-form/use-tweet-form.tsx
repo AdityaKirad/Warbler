@@ -1,7 +1,6 @@
-import { createId } from "@paralleldrive/cuid2";
 import { useEditor, useEditorState } from "@tiptap/react";
 import { useIsPending } from "~/hooks/use-is-pending";
-import { useUser } from "~/hooks/use-user";
+import { useRequiredUser } from "~/hooks/use-user";
 import type { action } from "~/routes/_main+/tweet+";
 import { useEffect } from "react";
 import { Link, useFetcher } from "react-router";
@@ -22,12 +21,7 @@ export function useTweetForm({
 }> = {}) {
   const fetcher = useFetcher<typeof action>({ key: NEW_TWEET_FETCHER_KEY });
   const isPending = useIsPending();
-  const currentUser = useUser();
-  const user = currentUser?.user;
-
-  if (!user) {
-    throw new Error("useTweetForm must be used by an authenticated user");
-  }
+  const { user } = useRequiredUser();
 
   const maxCharCount = user.profileVerified ? 1120 : 280;
   const editor = useEditor({
@@ -60,6 +54,8 @@ export function useTweetForm({
   useEffect(() => {
     const { data, state } = fetcher;
 
+    console.table({ data, state });
+
     if (state !== "idle" || !data) {
       return;
     }
@@ -75,13 +71,8 @@ export function useTweetForm({
       editor.commands.clearContent(true);
       toast(
         <div>
-          Your post was sent.
-          {user ? (
-            <>
-              {" "}
-              <Link to={`/${user.username}/status/${data.id}`}>View</Link>
-            </>
-          ) : null}
+          Your post was sent.{" "}
+          <Link to={`/${user?.username}/status/${data.id}`}>View</Link>
         </div>,
       );
     }
@@ -98,7 +89,6 @@ export function useTweetForm({
     if (replyToTweetId) {
       formData.set("replyToTweetId", replyToTweetId);
     }
-    formData.set("id", createId());
     formData.set("tweet", JSON.stringify(editor?.getJSON()));
     fetcher.submit(formData, { method: "POST", action: "/tweet" });
   }

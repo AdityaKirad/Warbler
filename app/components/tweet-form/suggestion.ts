@@ -1,4 +1,3 @@
-import type { MentionOptions } from "@tiptap/extension-mention";
 import { ReactRenderer } from "@tiptap/react";
 import type {
   SuggestionKeyDownProps,
@@ -35,13 +34,33 @@ function applyMentionListStyles(
   element.style.height = "15rem";
 }
 
-export const suggestion: Omit<
-  MentionOptions<MentionUser, MentionSelected>["suggestion"],
-  "editor"
-> = {
+export const suggestion = {
   char: "@",
   decorationClass: "text-blue-500",
   decorationEmptyClass: "text-foreground",
+  command: ({ editor, range, props }) => {
+    const username = props.id ?? "";
+
+    if (!username) return;
+
+    const mentionText = `@${username}`;
+    const replaceText = `${mentionText} `;
+
+    editor
+      .chain()
+      .focus()
+      .insertContentAt(range, replaceText)
+      // select the inserted @username (without trailing space)
+      .setTextSelection({
+        from: range.from,
+        to: range.from + mentionText.length,
+      })
+      // apply our custom mention mark
+      .setMark("mention", { id: username })
+      // move cursor after the space
+      .setTextSelection(range.from + replaceText.length)
+      .run();
+  },
   items({ query }: { query: string }): Promise<MentionUser[]> {
     if (!query) {
       return Promise.resolve([]);

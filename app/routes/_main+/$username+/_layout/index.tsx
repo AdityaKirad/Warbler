@@ -1,4 +1,10 @@
-import { db, follows, tweet, user } from "~/.server/drizzle";
+import {
+  db,
+  tweet,
+  tweetInteraction,
+  user,
+  userFollow,
+} from "~/.server/drizzle";
 import { getUser } from "~/.server/utils";
 import { PageTitle } from "~/components/page-title";
 import {
@@ -8,19 +14,69 @@ import {
 import { Button } from "~/components/ui/button";
 import { useUser } from "~/hooks/use-user";
 import { formatNumber } from "~/lib/utils";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { Link, Outlet } from "react-router";
 import type { Route } from "./+types";
 import { ProfileData } from "./profile-data";
 import { ProfileHeader } from "./profile-header";
 import { Tabs } from "./tabs";
 
-export type LayoutLoader = typeof loader;
+export type UsernameLayoutLoader = typeof loader;
 
-export const LAYOUT_ROUTE_ID = "routes/_main+/$username+/_layout/index";
+export const USERNAME_LAYOUT_ROUTE_ID =
+  "routes/_main+/$username+/_layout/index";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
   const currentUser = await getUser(request);
+
+  const { pathname } = new URL(request.url);
+
+  const where = pathname.includes("/likes")
+    ? inArray(
+        tweet.id,
+        db
+          .select({ tweetId: tweetInteraction.tweetId })
+          .from(tweetInteraction)
+          .where(
+            and(
+              eq(tweetInteraction.userId, user.id),
+              eq(tweetInteraction.type, "like"),
+            ),
+          ),
+      )
+    : pathname.includes("/with_replies")
+      ? or(
+          eq(tweet.userId, user.id),
+          inArray(
+            tweet.id,
+            db
+              .select({ tweetId: tweetInteraction.tweetId })
+              .from(tweetInteraction)
+              .where(
+                and(
+                  eq(tweetInteraction.userId, user.id),
+                  eq(tweetInteraction.type, "repost"),
+                ),
+              ),
+          ),
+        )
+      : and(
+          or(
+            and(eq(tweet.userId, user.id), isNull(tweet.replyToTweetId)),
+            inArray(
+              tweet.id,
+              db
+                .select({ tweetId: tweetInteraction.tweetId })
+                .from(tweetInteraction)
+                .where(
+                  and(
+                    eq(tweetInteraction.userId, user.id),
+                    eq(tweetInteraction.type, "repost"),
+                  ),
+                ),
+            ),
+          ),
+        );
 
   const [data] = await db
     .select({
@@ -38,14 +94,21 @@ export async function loader({ params, request }: Route.LoaderArgs) {
       createdAt: user.createdAt,
 
       count: {
-        followers: db.$count(follows, eq(follows.followingId, user.id)),
-        following: db.$count(follows, eq(follows.followerId, user.id)),
-        posts: db.$count(tweet, eq(tweet.userId, user.id)),
+        followers: db.$count(userFollow, eq(userFollow.followingId, user.id)),
+        following: db.$count(userFollow, eq(userFollow.followerId, user.id)),
+        posts: db.$count(tweet, where),
       },
 
       ...(currentUser?.user.id
         ? {
-            following: sql<boolean>`EXISTS(SELECT 1 FROM ${follows} WHERE ${follows.followingId} = ${user.id} AND ${follows.followerId} = ${currentUser.user.id})`,
+            following: sql<boolean>`
+              EXISTS(
+                SELECT 1 
+                FROM ${userFollow} 
+                WHERE ${userFollow.followingId} = ${user.id} 
+                AND ${userFollow.followerId} = ${currentUser.user.id}
+              )
+            `,
           }
         : {}),
     })
@@ -59,7 +122,7 @@ export default function Layout({ loaderData }: Route.ComponentProps) {
   const user = useUser();
   return (
     <div className="flex min-h-screen justify-between">
-      <div className="w-150 min-h-screen border-x">
+      <div className="min-h-screen w-150 border-x">
         <PageTitle
           title={loaderData ? loaderData.name : "Profile"}
           {...(loaderData && {

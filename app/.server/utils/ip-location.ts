@@ -4,7 +4,9 @@ export async function getIpLocation(request: Request) {
   const ip = getClientIPAddress(request.headers);
 
   try {
-    const res = await fetch(`https://ipapi.co/${ip}/json`);
+    const res = await fetch(`https://ipapi.co/${ip}/json`, {
+      signal: AbortSignal.timeout(1000),
+    });
 
     if (!res.ok) {
       return null;

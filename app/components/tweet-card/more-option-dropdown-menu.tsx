@@ -1,5 +1,4 @@
 import { useUser } from "~/hooks/use-user";
-import type { action } from "~/routes/_main+/$username+/follow";
 import {
   BanIcon,
   ChartNoAxesColumnIcon,
@@ -8,8 +7,9 @@ import {
   Trash2,
   VolumeOffIcon,
 } from "lucide-react";
+import { Form, Link, useFetcher } from "react-router";
 import { useEffect } from "react";
-import { Link, useFetcher } from "react-router";
+import { toast } from "sonner";
 import { UserPlusIcon } from "../icons/user-plus";
 import { Button } from "../ui/button";
 import {
@@ -93,18 +93,14 @@ function FollowUserItem({
   username,
   following,
 }: Omit<MoreOptionDropdownMenuProps, "tweetId">) {
-  const fetcher = useFetcher<typeof action>();
-
-  useEffect(() => {});
-
   return (
     <DropdownMenuItem className="focus:bg-accent/20 rounded-none" asChild>
-      <fetcher.Form method="POST" action={`/${username}/follow`}>
+      <Form method="POST" action={`/${username}/follow`} navigate={false}>
         <button className="flex items-center gap-2" type="submit">
           <UserPlusIcon />
           {following ? "Unfollow" : "Follow"} @{username}
         </button>
-      </fetcher.Form>
+      </Form>
     </DropdownMenuItem>
   );
 }
@@ -113,6 +109,19 @@ function DeleteTweetDialog({
   tweetId,
 }: Pick<MoreOptionDropdownMenuProps, "tweetId">) {
   const fetcher = useFetcher();
+
+  useEffect(() => {
+    if (fetcher.state !== "idle" || !fetcher.data) {
+      return;
+    }
+
+    if (fetcher.data.status === "success") {
+      toast("Your post was deleted");
+    } else {
+      toast.error("Something went wrong. Please try again.");
+    }
+  }, [fetcher.state, fetcher.data]);
+
   return (
     <>
       <DropdownMenuDialogItem

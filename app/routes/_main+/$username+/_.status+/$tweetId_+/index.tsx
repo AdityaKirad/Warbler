@@ -1,20 +1,20 @@
 import { renderToReactElement } from "@tiptap/static-renderer/pm/react";
-import { bookmark, db, like, repost, tweet, user } from "~/.server/drizzle";
+import { db, tweet, user } from "~/.server/drizzle";
 import { getUser } from "~/.server/utils";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
+import { FeedsTweetForm } from "~/components/feeds-tweet-form";
 import { ChatIcon } from "~/components/icons/chat";
 import { PageTitle } from "~/components/page-title";
 import {
   NonAuthenticatedSidebar,
   SearchFollowSidebar,
 } from "~/components/search-follow-sidebar";
+import { TweetCard } from "~/components/tweet-card";
 import { CommentButton } from "~/components/tweet-card/comment-button";
+import { LikeButton } from "~/components/tweet-card/like-button";
 import { RepostButton } from "~/components/tweet-card/repost-button";
-import {
-  BookmarkButton,
-  LikeButton,
-} from "~/components/tweet-card/tweet-engagement-buttons";
-import { extensions } from "~/components/tweet-form";
+import { BookmarkButton } from "~/components/tweet-card/tweet-engagement-buttons";
+import { extensions, mentionNodeLinkMapping } from "~/components/tweet-form";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import {
@@ -26,9 +26,18 @@ import {
 } from "~/components/ui/dialog";
 import { Separator } from "~/components/ui/separator";
 import { useUser } from "~/hooks/use-user";
-import { formatNumber, getNameInitials } from "~/lib/utils";
+import { cn, formatNumber, getNameInitials } from "~/lib/utils";
+import {
+  followingFlag,
+  getTweetReplies,
+  interactionCount,
+  tweetCoreFields,
+  tweetInteractionCountField,
+  tweetUserField,
+  tweetViewerField,
+} from "~/routes/_main+/feed-queries.server";
 import { format } from "date-fns";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { Link, useFetcher } from "react-router";
 import type { Route } from "./+types";
 
@@ -44,32 +53,23 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 
   const [post] = await db
     .select({
-      id: tweet.id,
-      content: tweet.content,
+      ...tweetCoreFields,
+      ...tweetUserField,
+
       text: tweet.text,
-      views: tweet.views,
-      createdAt: tweet.createdAt,
 
       count: {
-        likes: db.$count(like, eq(like.tweetId, tweet.id)),
-        reposts: db.$count(repost, eq(repost.tweetId, tweet.id)),
-        bookmarks: db.$count(bookmark, eq(bookmark.tweetId, tweet.id)),
-        replies: sql<number>`(SELECT COUNT (*) FROM ${tweet} AS reply WHERE reply.reply_to_tweet_id = ${tweet.id})`,
-      },
-
-      user: {
-        name: user.name,
-        username: user.username,
-        photo: user.photo,
+        ...tweetInteractionCountField.count,
+        bookmarks: interactionCount({ tweetId: tweet.id, type: "bookmark" }),
       },
 
       ...(currentUserId
         ? {
-            viewer: {
-              bookmarked: sql<boolean>`EXISTS(SELECT 1 FROM ${bookmark} WHERE ${bookmark.tweetId} = ${tweet.id} AND ${bookmark.userId} = ${currentUserId})`,
-              liked: sql<boolean>`EXISTS(SELECT 1 FROM ${like} WHERE ${like.tweetId} = ${tweet.id} AND ${like.userId} = ${currentUserId})`,
-              reposted: sql<boolean>`EXISTS(SELECT 1 FROM ${repost} WHERE ${repost.tweetId} = ${tweet.id} AND ${repost.userId} = ${currentUserId})`,
-            },
+            ...tweetViewerField(currentUserId),
+            following: followingFlag({
+              followingId: tweet.userId,
+              followerId: currentUserId,
+            }),
           }
         : {}),
     })
@@ -81,107 +81,65 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     throw new Error("Post not found");
   }
 
-  return { post };
+  const url = new URL(request.url);
+  const cursor = url.searchParams.get("cursor");
+
+  const replies = currentUserId
+    ? await getTweetReplies({ cursor, tweetId: post.id, userId: currentUserId })
+    : [];
+
+  return { post, replies };
 }
 
-export default function Page({ loaderData: { post } }: Route.ComponentProps) {
+export default function Page({
+  loaderData: { post, replies },
+}: Route.ComponentProps) {
   const currentUser = useUser();
-  const fetcher = useFetcher();
-  const formId = `post-${post.id}-engagement`;
   return (
     <div className="flex min-h-screen justify-between">
-      <div className="w-150 min-h-screen border-x">
+      <div className="min-h-screen w-150 border-x">
         <PageTitle title="Post" />
-        <div className="space-y-2 p-4">
-          <div className="flex gap-2">
-            <Avatar asChild>
-              <Link to={`/${post.user.username}`}>
-                <AvatarImage
-                  src={post.user.photo ?? DefaultProfilePicture}
-                  alt=""
-                />
-                <AvatarFallback>
-                  {getNameInitials(post.user.name)}
-                </AvatarFallback>
-              </Link>
-            </Avatar>
-            <div>
-              <h3 className="font-">{post.user.name}</h3>
-              <p className="text-muted-foreground text-sm">
-                @{post.user.username}
-              </p>
-            </div>
-          </div>
-          <div>
-            {renderToReactElement({
-              extensions,
-              content: post.content,
-            })}
-          </div>
-          <p className="text-muted-foreground">
-            {format(post.createdAt, "h:mm a · MMM d, yyyy")} ·{" "}
-            <span className="text-foreground">{formatNumber(post.views)}</span>{" "}
-            Views
-          </p>
-          <Separator />
-          <fetcher.Form
-            className="flex justify-between"
-            method="POST"
-            id={formId}
-            action={`/tweet/${post.id}/engagement`}>
-            <CommentButton
-              id={post.id}
-              body={post.content}
-              createdAt={post.createdAt}
-              user={post.user}
-              replyCount={post.count.replies}
-            />
-            <RepostButton
-              formId={formId}
-              name={post.user.name}
-              reposted={post.viewer?.reposted ?? false}
-              repostCount={post.count.reposts}
-            />
-            <LikeButton
-              name={post.user.name}
-              likeCount={post.count.likes}
-              liked={post.viewer?.liked ?? false}
-            />
-            <BookmarkButton
-              bookmarked={post.viewer?.bookmarked ?? false}
-              bookmarkCount={post.count.bookmarks}
-            />
-          </fetcher.Form>
-          {!currentUser && (
-            <Dialog>
-              <DialogTrigger className="bg-muted flex w-full items-center gap-2 rounded-xl border p-2 font-medium">
-                <ChatIcon />
-                Read {post.count.replies} replies
-              </DialogTrigger>
-              <DialogContent className="justify-center py-20 max-sm:px-8 sm:h-fit">
-                <ChatIcon
-                  className="mx-auto size-12 text-blue-500"
-                  fill="currentColor"
-                />
-                <DialogTitle>See what everyone is saying.</DialogTitle>
-                <DialogDescription>
-                  Join Warbler now to read replies on this post.
-                </DialogDescription>
-                <Button className="rounded-full text-base" asChild>
-                  <Link to="/flow/login">Log in</Link>
-                </Button>
-                <Button
-                  className="rounded-full text-base"
-                  variant="outline"
-                  size="lg"
-                  asChild>
-                  <Link to="/flow/signup">Sign up</Link>
-                </Button>
-              </DialogContent>
-            </Dialog>
+        <div className={cn("space-y-2 p-4", { "border-b": currentUser })}>
+          <TweetContent tweet={post} />
+          {currentUser ? (
+            <>
+              <Separator />
+              <FeedsTweetForm removePaddingAndBorders />
+            </>
+          ) : (
+            <>
+              <Dialog>
+                <DialogTrigger className="bg-muted flex w-full items-center gap-2 rounded-xl border p-2 font-medium">
+                  <ChatIcon />
+                  Read {post.count.replies} replies
+                </DialogTrigger>
+                <DialogContent className="justify-center py-20 max-sm:px-8 sm:h-fit">
+                  <ChatIcon
+                    className="mx-auto size-12 text-blue-500"
+                    fill="currentColor"
+                  />
+                  <DialogTitle>See what everyone is saying.</DialogTitle>
+                  <DialogDescription>
+                    Join Warbler now to read replies on this post.
+                  </DialogDescription>
+                  <Button className="rounded-full text-base" asChild>
+                    <Link to="/flow/login">Log in</Link>
+                  </Button>
+                  <Button
+                    className="rounded-full text-base"
+                    variant="outline"
+                    size="lg"
+                    asChild>
+                    <Link to="/flow/signup">Sign up</Link>
+                  </Button>
+                </DialogContent>
+              </Dialog>
+              <Separator />
+            </>
           )}
-          <Separator />
         </div>
+        {currentUser &&
+          replies.map((reply) => <TweetCard key={reply.id} {...reply} />)}
       </div>
       {currentUser ? <SearchFollowSidebar /> : <NonAuthenticatedSidebar />}
       {!currentUser && (
@@ -209,5 +167,79 @@ export default function Page({ loaderData: { post } }: Route.ComponentProps) {
         </div>
       )}
     </div>
+  );
+}
+
+function TweetContent({
+  tweet,
+}: {
+  tweet: Awaited<ReturnType<typeof loader>>["post"];
+}) {
+  const fetcher = useFetcher();
+  const formId = `tweet-${tweet.id}-engagement`;
+  return (
+    <>
+      <div className="flex gap-2">
+        <Avatar asChild>
+          <Link to={`/${tweet.user.username}`}>
+            <AvatarImage
+              src={tweet.user.photo ?? DefaultProfilePicture}
+              alt=""
+            />
+            <AvatarFallback>{getNameInitials(tweet.user.name)}</AvatarFallback>
+          </Link>
+        </Avatar>
+        <div>
+          <h3 className="font-">{tweet.user.name}</h3>
+          <p className="text-muted-foreground text-sm">
+            @{tweet.user.username}
+          </p>
+        </div>
+      </div>
+      <div>
+        {renderToReactElement({
+          extensions,
+          content: tweet.content,
+          options: { markMapping: mentionNodeLinkMapping },
+        })}
+      </div>
+      <p className="text-muted-foreground">
+        {format(tweet.createdAt, "h:mm a · MMM d, yyyy")} ·{" "}
+        <span className="text-foreground">{formatNumber(tweet.views)}</span>{" "}
+        Views
+      </p>
+      <Separator />
+      <fetcher.Form
+        className="flex justify-between"
+        method="POST"
+        id={formId}
+        action={`/tweet/${tweet.id}/interaction`}>
+        <CommentButton
+          id={tweet.id}
+          body={tweet.content}
+          createdAt={tweet.createdAt}
+          user={tweet.user}
+          replyCount={tweet.count.replies}
+        />
+        <RepostButton
+          formId={formId}
+          name={tweet.user.name}
+          reposted={tweet.viewer?.reposted ?? false}
+          repostCount={tweet.count.reposts}
+        />
+        <LikeButton
+          fetcher={fetcher}
+          name={tweet.user.name}
+          liked={tweet.viewer?.liked ?? false}
+          count={tweet.count.likes}
+        />
+        <BookmarkButton
+          fetcher={fetcher}
+          bookmarked={tweet.viewer?.bookmarked ?? false}
+          count={tweet.count.bookmarks}
+          showBookmarkCount
+        />
+      </fetcher.Form>
+    </>
   );
 }

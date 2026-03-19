@@ -244,7 +244,7 @@ function UserDropdown({ user }: { user: UserSelectType }) {
           <MoreHorizontalIcon className="ml-auto max-xl:hidden" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="py-4 xl:w-(--radix-dropdown-menu-trigger-width)">
+      <DropdownMenuContent className="px-0 py-2 xl:w-(--radix-dropdown-menu-trigger-width)">
         <DropdownMenuItem className="text-base font-medium">
           Add an existing account
         </DropdownMenuItem>

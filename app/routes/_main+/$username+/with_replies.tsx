@@ -1,23 +1,18 @@
-import {
-  bookmark,
-  db,
-  follows,
-  like,
-  repost,
-  tweet,
-  user,
-} from "~/.server/drizzle";
 import { getUser } from "~/.server/utils";
+import { Spinner } from "~/components/spinner";
 import { TweetCard } from "~/components/tweet-card";
+import { useInfiniteTweetsScroll } from "~/hooks/use-infinite-tweets-scroll";
 import { useUser } from "~/hooks/use-user";
-import { desc, eq, sql } from "drizzle-orm";
-import { useRouteLoaderData } from "react-router";
-import { LAYOUT_ROUTE_ID, type LayoutLoader } from "./_layout";
+import { useParams } from "react-router";
+import { getUserPostsWithReplies, PAGE_SIZE } from "../feed-queries.server";
+import { USERNAME_LAYOUT_ROUTE_ID, type UsernameLayoutLoader } from "./_layout";
 import type { Route } from "./+types/with_replies";
 
 export function meta({ matches }: Route.MetaArgs) {
-  const match = matches.find((match) => match?.id === LAYOUT_ROUTE_ID);
-  const loaderData = match?.loaderData as Awaited<ReturnType<LayoutLoader>>;
+  const match = matches.find((match) => match?.id === USERNAME_LAYOUT_ROUTE_ID);
+  const loaderData = match?.loaderData as Awaited<
+    ReturnType<UsernameLayoutLoader>
+  >;
   return [
     {
       title: loaderData
@@ -34,71 +29,62 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     return null;
   }
 
-  const replies = db
-    .$with("replies")
-    .as(db.select({ replyToTweetId: tweet.replyToTweetId }).from(tweet));
+  const url = new URL(request.url);
+  const cursor = url.searchParams.get("cursor");
 
-  const posts = await db
-    .with(replies)
-    .select({
-      id: tweet.id,
-      content: tweet.content,
-      views: tweet.views,
-      createdAt: tweet.createdAt,
+  const tweets = await getUserPostsWithReplies({
+    cursor,
+    userId: currentUser.user.id,
+    username: params.username,
+  });
 
-      following: sql<boolean>`EXISTS(SELECT 1 FROM ${follows} WHERE ${follows.followingId} = ${user.id} AND ${follows.followerId} = ${user.id})`,
-
-      count: {
-        likes: db.$count(like, eq(like.tweetId, tweet.id)),
-        replies: db.$count(replies, eq(replies.replyToTweetId, tweet.id)),
-        reposts: db.$count(repost, eq(repost.tweetId, tweet.id)),
-      },
-
-      viewer: {
-        bookmarked:
-          sql<boolean>`EXISTS(SELECT 1 FROM ${bookmark} WHERE ${bookmark.tweetId} = ${tweet.id} AND ${bookmark.userId} = ${user.id})`.as(
-            "has_bookmarked",
-          ),
-        liked:
-          sql<boolean>`EXISTS(SELECT 1 FROM ${like} WHERE ${like.tweetId} = ${tweet.id} AND ${like.userId} = ${user.id})`.as(
-            "has_liked",
-          ),
-        reposted:
-          sql<boolean>`EXISTS(SELECT 1 FROM ${repost} WHERE ${repost.tweetId} = ${tweet.id} AND ${repost.userId} = ${user.id})`.as(
-            "has_reposted",
-          ),
-      },
-    })
-    .from(tweet)
-    .innerJoin(user, eq(user.id, tweet.userId))
-    .where(eq(user.username, params.username))
-    .orderBy(desc(tweet.createdAt));
-
-  return { posts };
+  return {
+    tweets,
+    hasMore: tweets.length === PAGE_SIZE,
+    nextCursor:
+      tweets.length > 0
+        ? tweets[tweets.length - 1]?.createdAt.toISOString()
+        : null,
+  };
 }
 
 export default function Page({ loaderData }: Route.ComponentProps) {
-  const data = useRouteLoaderData<LayoutLoader>(LAYOUT_ROUTE_ID)!;
   const user = useUser();
-  if (!user) {
-    return (
-      <div className="mx-auto mt-16 max-w-80">
-        <h3 className="text-3xl font-bold">{data?.username} hasn’t posted</h3>
-        <p className="text-muted-foreground text-sm">
-          When they do, their posts will show up here.
-        </p>
-      </div>
-    );
-  }
-  return loaderData?.posts.map((post) => (
-    <TweetCard
-      key={post.id}
-      user={{
-        name: data.name,
-        username: data.username,
-        photo: data.photo,
-      }}
-      {...post}
-    />
-  ));
+
+  return user && loaderData ? (
+    <AuthenticatedContent loaderData={loaderData} />
+  ) : (
+    <NonAuthenticatedContent />
+  );
+}
+
+function NonAuthenticatedContent() {
+  const params = useParams();
+  return (
+    <div className="mx-auto mt-16 max-w-80">
+      <h3 className="text-3xl font-bold">{params.username} hasn’t posted</h3>
+      <p className="text-muted-foreground text-sm">
+        When they do, their posts will show up here.
+      </p>
+    </div>
+  );
+}
+
+function AuthenticatedContent({
+  loaderData,
+}: {
+  loaderData: NonNullable<Awaited<ReturnType<typeof loader>>>;
+}) {
+  const { fetcher, loadMoreRef, tweets } = useInfiniteTweetsScroll(loaderData);
+  return (
+    <>
+      {tweets.map((tweet) => (
+        <TweetCard key={tweet.id} {...tweet} />
+      ))}
+      <div ref={loadMoreRef} aria-hidden />
+      {fetcher.state === "loading" && (
+        <Spinner className="mx-auto my-8 text-blue-500" />
+      )}
+    </>
+  );
 }

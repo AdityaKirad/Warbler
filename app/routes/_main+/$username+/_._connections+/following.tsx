@@ -1,4 +1,4 @@
-import { db, follows, user } from "~/.server/drizzle";
+import { db, user, userFollow } from "~/.server/drizzle";
 import { getUser } from "~/.server/utils";
 import { eq, inArray, sql } from "drizzle-orm";
 import { redirect } from "react-router";
@@ -39,13 +39,13 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 
       following: sql<
         boolean | null
-      >`CASE WHEN ${user.id} != ${currentUser.user.id} THEN EXISTS(SELECT 1 FROM ${follows} WHERE ${follows.followingId} = ${user.id} AND ${follows.followerId} = ${currentUser.user.id}) ELSE NULL END`,
+      >`CASE WHEN ${user.id} != ${currentUser.user.id} THEN EXISTS(SELECT 1 FROM ${userFollow} WHERE ${userFollow.followingId} = ${user.id} AND ${userFollow.followerId} = ${currentUser.user.id}) ELSE NULL END`,
     })
-    .from(follows)
-    .innerJoin(user, eq(follows.followingId, user.id))
+    .from(userFollow)
+    .innerJoin(user, eq(userFollow.followingId, user.id))
     .where(
       inArray(
-        follows.followerId,
+        userFollow.followerId,
         db
           .select({ id: user.id })
           .from(user)

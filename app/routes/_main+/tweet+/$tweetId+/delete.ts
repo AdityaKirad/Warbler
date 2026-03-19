@@ -1,7 +1,7 @@
 import { db, tweet } from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
 import { and, eq } from "drizzle-orm";
-import { createCookie, redirect } from "react-router";
+import { createCookie, data, redirect } from "react-router";
 import type { Route } from "./+types/delete";
 
 export const deletePostToastCookie = createCookie("__delete_post_toast", {
@@ -23,14 +23,15 @@ export async function action({ params, request }: Route.ActionArgs) {
     .where(and(eq(tweet.id, params.tweetId), eq(tweet.userId, userId)))
     .returning();
 
+  const toastValue = res.length ? "success" : "error";
   const referer = request.headers.get("referer") ?? "/home";
   const url = new URL(referer, process.env.URL);
-  const path = url.pathname + url.search;
-  const toastValue = res.length ? "success" : "error";
 
-  throw redirect(path, {
+  throw data(null, {
     headers: {
-      "set-cookie": await deletePostToastCookie.serialize(toastValue, { path }),
+      "set-cookie": await deletePostToastCookie.serialize(toastValue, {
+        path: url.pathname,
+      }),
     },
   });
 }

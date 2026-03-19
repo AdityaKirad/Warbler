@@ -1,4 +1,4 @@
-import { db, follows, user } from "~/.server/drizzle";
+import { db, user, userFollow } from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
 import { and, eq, sql } from "drizzle-orm";
 import { redirect } from "react-router";
@@ -13,17 +13,17 @@ export async function action({ request, params }: Route.ActionArgs) {
 
   await db.transaction(async (tx) => {
     const result = await tx
-      .delete(follows)
+      .delete(userFollow)
       .where(
         and(
-          eq(follows.followerId, userId),
-          eq(follows.followingId, followingId),
+          eq(userFollow.followerId, userId),
+          eq(userFollow.followingId, followingId),
         ),
       )
       .returning();
 
     if (!result.length) {
-      await tx.insert(follows).values({
+      await tx.insert(userFollow).values({
         followingId,
         followerId: userId,
       });

@@ -3,8 +3,6 @@ import type { JSONContent } from "@tiptap/core";
 import { generateText } from "@tiptap/core";
 import { db, tweet } from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
-import type { UNSAFE_DataWithResponseInit as DataWithResponseInit } from "react-router";
-import { data } from "react-router";
 import { extensions } from "../../../components/tweet-form/extensions";
 import type { Route } from "./+types";
 
@@ -16,10 +14,8 @@ type TipTapDoc = {
 export async function action({
   request,
 }: Route.ActionArgs): Promise<
-  DataWithResponseInit<
-    | { status: "error"; message: string; value: string }
-    | { status: "success"; id: string; value: string }
-  >
+  | { status: "error"; message: string; value: string }
+  | { status: "success"; id: string; value: string }
 > {
   const {
     user: { id: userId, profileVerified },
@@ -27,32 +23,60 @@ export async function action({
 
   const formData = await request.formData();
 
-  const id = formData.get("id")?.toString();
   const replyToTweetId = formData.get("replyToTweetId")?.toString();
   const tweetRaw = formData.get("tweet");
 
-  const referer = request.headers.get("referer") ?? "/home";
-
   if (typeof tweetRaw !== "string") {
-    return data(
-      {
-        status: "error",
-        message: "Invalid tweet payload",
-        value: "",
-      },
-      {
-        status: 302,
-        headers: {
-          Location: referer,
-        },
-      },
-    );
+    return {
+      status: "error",
+      message: "Invalid tweet payload",
+      value: "",
+    };
   }
 
+  const parsed = validateTweet({ profileVerified, tweet: tweetRaw });
+
+  if (parsed.status === "error") {
+    return parsed;
+  }
+
+  const [createdTweet] = await db
+    .insert(tweet)
+    .values({
+      userId,
+      replyToTweetId,
+      ...parsed,
+    })
+    .returning({ id: tweet.id });
+
+  if (!createdTweet) {
+    return {
+      status: "error",
+      message: "Failed to create tweet",
+      value: tweetRaw,
+    };
+  }
+
+  return { status: "success", id: createdTweet.id, value: "" };
+}
+
+export function validateTweet({
+  tweet,
+  profileVerified,
+}: {
+  tweet: string;
+  profileVerified: boolean;
+}):
+  | { status: "error"; message: string; value: string }
+  | {
+      status: "success";
+      content: { type: "doc"; content: JSONContent[] };
+      text: string;
+    } {
   let parsed: unknown;
 
   try {
-    parsed = JSON.parse(tweetRaw);
+    parsed = JSON.parse(tweet);
   } catch (error) {
     console.error("Tweet JSON Parse Error: ", error);
     parsed = null;
@@ -63,7 +87,7 @@ export async function action({
   if (isTiptapDoc(parsed)) {
     content = parsed;
   } else {
-    content = textToTipTapDoc(tweetRaw.trim());
+    content = textToTipTapDoc(tweet?.trim());
   }
 
   let text: string;
@@ -72,65 +96,22 @@ export async function action({
     text = generateText(content, extensions);
   } catch (error) {
     console.error("Invalid TipTap document: ", error);
-    return data(
-      { status: "error", message: "Invalid Tweet format", value: tweetRaw },
-      {
-        status: 302,
-        headers: {
-          Location: referer,
-        },
-      },
-    );
+    return { status: "error", message: "Invalid Tweet format", value: tweet };
   }
 
   const charCount = [...text].length;
 
   if (!charCount) {
-    return data(
-      { status: "error", message: "Tweet is empty", value: tweetRaw },
-      {
-        status: 302,
-        headers: {
-          Location: referer,
-        },
-      },
-    );
+    return { status: "error", message: "Tweet is empty", value: tweet };
   }
 
   const maxCharCount = profileVerified ? 1120 : 280;
 
   if (charCount > maxCharCount) {
-    return data(
-      { status: "error", message: "Tweet is too long", value: tweetRaw },
-      {
-        status: 302,
-        headers: {
-          Location: referer,
-        },
-      },
-    );
+    return { status: "error", message: "Tweet is too long", value: tweet };
   }
 
-  const [createdTweet] = await db
-    .insert(tweet)
-    .values({
-      id,
-      userId,
-      replyToTweetId,
-      text,
-      content,
-    })
-    .returning({ id: tweet.id });
-
-  return data(
-    { status: "success", value: "", id: createdTweet?.id as string },
-    {
-      status: 302,
-      headers: {
-        Location: referer,
-      },
-    },
-  );
+  return { status: "success", content, text };
 }
 
 function isTiptapDoc(value: unknown): value is TipTapDoc {

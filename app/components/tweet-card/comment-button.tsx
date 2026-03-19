@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { DialogTweetForm } from "../dialog-tweet-form";
 import { ChatIcon } from "../icons/chat";
-import { extensions } from "../tweet-form";
+import { extensions, mentionNodeTextMapping } from "../tweet-form";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import {
@@ -37,7 +37,7 @@ export function CommentButton(props: {
   const currentUser = useUser();
   return (
     <Dialog open={dialog} onOpenChange={dialogSet}>
-      <DialogTrigger className="group flex cursor-pointer items-center gap-0.5 transition-colors outline-none hover:text-blue-500 focus-visible:text-blue-500">
+      <DialogTrigger className="group flex items-center gap-0.5 transition-colors outline-none hover:text-blue-500 focus-visible:text-blue-500">
         <div className="rounded-full p-2 group-hover:bg-blue-400/20 group-focus-visible:bg-blue-400/20 group-focus-visible:outline-2 group-focus-visible:outline-blue-300">
           <ChatIcon className="size-5" />
         </div>
@@ -104,6 +104,7 @@ function AuthenicatedContent({
             {renderToReactElement({
               extensions,
               content: body,
+              options: { nodeMapping: mentionNodeTextMapping },
             })}
           </div>
           <div className="text-muted-foreground">
