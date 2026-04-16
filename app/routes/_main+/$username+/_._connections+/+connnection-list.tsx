@@ -26,34 +26,34 @@ export function ConnectionList({
   );
 }
 
-function ConnectionCard(props: ConnectionCardProps) {
+function ConnectionCard(connnection: ConnectionCardProps) {
   return (
     <Form
       className="hover:bg-accent/20 relative flex gap-2 px-4 py-2 transition-colors"
       method="POST"
-      action={`/${props.username}/follow`}
+      action={`/${connnection.username}/follow`}
       navigate={false}>
       <Link
-        to={`/${props.username}`}
+        to={`/${connnection.username}`}
         className="focus-visible:bg-accent/20 absolute inset-0 focus-visible:outline-2 focus-visible:outline-blue-300"
       />
       <Avatar>
         <AvatarImage
-          src={props.photo ?? DefaultProfilePicture}
-          alt={`@${props.username}`}
+          src={connnection.photo ?? DefaultProfilePicture}
+          alt={`@${connnection.username}`}
           loading="lazy"
           decoding="async"
         />
-        <AvatarFallback>{getNameInitials(props.name)}</AvatarFallback>
+        <AvatarFallback>{getNameInitials(connnection.name)}</AvatarFallback>
       </Avatar>
       <div>
-        <p className="font-medium">{props.name}</p>
-        <p className="text-muted-foreground text-sm">@{props.username}</p>
-        <p>{props.bio}</p>
+        <p className="font-medium">{connnection.name}</p>
+        <p className="text-muted-foreground text-sm">@{connnection.username}</p>
+        <p>{connnection.bio}</p>
       </div>
-      {props.following !== null && (
+      {connnection.following !== null && (
         <Button className="z-10 ml-auto rounded-full" type="submit">
-          {props.following ? "Unfollow" : "Follow"}
+          {connnection.following ? "Unfollow" : "Follow"}
         </Button>
       )}
     </Form>

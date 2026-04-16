@@ -14,10 +14,11 @@ export function PageTitle({
     <div className="bg-background/70 sticky top-0 z-10 flex items-center gap-4 p-2 backdrop-blur-lg">
       <Button
         className="rounded-full"
+        type="button"
         variant="ghost"
         size="icon"
-        onClick={() => navigate(-1)}
-        aria-label="Back">
+        aria-label="Back"
+        onClick={() => navigate(-1)}>
         <ArrowLeftIcon />
       </Button>
       {description ? (

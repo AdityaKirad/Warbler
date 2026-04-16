@@ -127,7 +127,7 @@ function AuthenticatedBookmarkButton({
         evt.preventDefault();
         interactionSet((prev) => ({
           bookmarked: !prev.bookmarked,
-          ...(showBookmarkCount
+          ...(showBookmarkCount && prev.count
             ? {
                 count: interaction.bookmarked ? prev.count - 1 : prev.count + 1,
               }

@@ -8,12 +8,12 @@ import {
   ShieldCheckIcon,
 } from "lucide-react";
 import { Link } from "react-router";
-import type { LayoutLoader } from "./index";
+import type { UsernameLayoutLoader } from ".";
 
 export function ProfileData({
   user,
 }: {
-  user: NonNullable<Awaited<ReturnType<LayoutLoader>>>;
+  user: NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>["data"]>;
 }) {
   return (
     <>

@@ -5,7 +5,7 @@ import { useFetchers } from "react-router";
 import { validateTweet } from "../tweet+";
 
 export function useOptimisticTweet() {
-  const { user } = useRequiredUser();
+  const user = useRequiredUser();
   const fetchers = useFetchers();
 
   const fetcher = fetchers.find(

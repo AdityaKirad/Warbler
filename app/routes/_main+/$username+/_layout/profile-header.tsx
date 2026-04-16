@@ -1,14 +1,14 @@
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { useUser } from "~/hooks/use-user";
 import { Link } from "react-router";
+import type { UsernameLayoutLoader } from ".";
 import { EditProfile } from "./edit-profile";
-import type { LayoutLoader } from "./index";
 import { ProfileActions } from "./profile-actions";
 
 export function ProfileHeader({
   user,
 }: {
-  user: NonNullable<Awaited<ReturnType<LayoutLoader>>>;
+  user: NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>["data"]>;
 }) {
   const currentUser = useUser();
   return (
@@ -21,7 +21,7 @@ export function ProfileHeader({
       <div>
         <Link
           className="bg-background absolute top-[calc(var(--header-height)-var(--photo-size)/2)] left-4 rounded-full p-1 [--photo-size:7.5rem]"
-          to="about">
+          to="photo">
           <img
             className="size-(--photo-size) rounded-full"
             src={user.photo ?? DefaultProfilePicture}
@@ -30,7 +30,7 @@ export function ProfileHeader({
             loading="lazy"
           />
         </Link>
-        {user.id === currentUser?.user.id ? (
+        {user.id === currentUser?.id ? (
           <EditProfile user={user} />
         ) : (
           <ProfileActions user={user} />

@@ -24,12 +24,12 @@ import {
 } from "lucide-react";
 import { Form, Link } from "react-router";
 import { toast } from "sonner";
-import type { LayoutLoader } from "./index";
+import type { UsernameLayoutLoader } from ".";
 
 export function ProfileActions({
   user,
 }: {
-  user: NonNullable<Awaited<ReturnType<LayoutLoader>>>;
+  user: NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>["data"]>;
 }) {
   const currentUser = useUser();
   return (
@@ -65,7 +65,7 @@ export function ProfileActions({
                     if (navigator.share) {
                       try {
                         await navigator.share({
-                          url: `${process.env.URL}/${user.username}`,
+                          url: `${process.env.APP_URL}/${user.username}`,
                         });
                       } catch (error) {
                         console.error(error);
@@ -84,7 +84,7 @@ export function ProfileActions({
                 <button
                   onClick={() =>
                     navigator.clipboard.writeText(
-                      `${process.env.URL}/${user.username}`,
+                      `${process.env.APP_URL}/${user.username}`,
                     )
                   }>
                   <Link2Icon className="-rotate-45" />
@@ -115,7 +115,7 @@ export function ProfileActions({
           <DialogContent className="justify-center py-20 max-sm:px-8 sm:h-fit">
             <UserPlusIcon className="mx-auto size-12 text-blue-500" />
             <DialogTitle>
-              Follow {user.name} to see what they share on Warbler.
+              Follow {user?.name} to see what they share on Warbler.
             </DialogTitle>
             <DialogDescription>
               Sign up so you never miss their posts.

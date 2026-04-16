@@ -11,9 +11,9 @@ export function meta({ matches }: Route.MetaArgs) {
   const match = matches.find(
     (match) => match?.id === CONNECTION_LAYOUT_ROUTE_ID,
   );
-  const user = (
-    match?.loaderData as Awaited<ReturnType<CONNECTION_LAYOUT_LOADER>>
-  ).user;
+  const user = match?.loaderData as Awaited<
+    ReturnType<CONNECTION_LAYOUT_LOADER>
+  >;
   return [
     {
       title: `Verified accounts following ${user?.name} (@${user?.username}) / Warbler`,
@@ -22,10 +22,14 @@ export function meta({ matches }: Route.MetaArgs) {
 }
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  const currentUser = await getUser(request);
+  const { session, clearSessionHeader } = await getUser(request);
 
-  if (!currentUser) {
-    throw redirect(params.username);
+  if (!session) {
+    throw redirect(params.username, {
+      headers: {
+        "set-cookie": clearSessionHeader,
+      },
+    });
   }
 
   const followers = await db
@@ -36,9 +40,15 @@ export async function loader({ params, request }: Route.LoaderArgs) {
       photo: user.photo,
       bio: user.bio,
 
-      following: sql<
-        boolean | null
-      >`CASE WHEN ${user.id} != ${currentUser.user.id} THEN EXISTS(SELECT 1 FROM ${userFollow} WHERE ${userFollow.followingId} = ${user.id} AND ${userFollow.followerId} = ${currentUser.user.id}) ELSE NULL END`,
+      following: sql<boolean | null>`
+        CASE WHEN ${user.id} != ${session.user.id} 
+        THEN EXISTS(
+          SELECT 1 
+          FROM ${userFollow} 
+          WHERE ${userFollow.followingId} = ${user.id} 
+          AND ${userFollow.followerId} = ${session.user.id}
+        ) 
+        ELSE NULL END`,
     })
     .from(userFollow)
     .innerJoin(user, eq(userFollow.followerId, user.id))
@@ -55,16 +65,12 @@ export async function loader({ params, request }: Route.LoaderArgs) {
       ),
     );
 
-  return {
-    followers: followers.map((follower) => ({
-      ...follower,
-      profileVerified: true,
-    })),
-  };
+  return followers.map((follower) => ({
+    ...follower,
+    profileVerified: true,
+  }));
 }
 
-export default function Page({
-  loaderData: { followers },
-}: Route.ComponentProps) {
-  return <ConnectionList connections={followers} />;
+export default function Page({ loaderData }: Route.ComponentProps) {
+  return <ConnectionList connections={loaderData} />;
 }

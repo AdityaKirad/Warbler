@@ -166,7 +166,7 @@ export async function getBookmarksFeed({
   cursor: string | null;
   userId: string;
 }) {
-  return db
+  const tweets = await db
     .select({
       ...tweetCoreFields,
       ...tweetUserField,
@@ -198,6 +198,11 @@ export async function getBookmarksFeed({
     )
     .orderBy(desc(tweet.createdAt))
     .limit(PAGE_SIZE);
+
+  return tweets.map((tweet) => ({
+    ...tweet,
+    viewer: { ...tweet.viewer, bookmarked: true },
+  }));
 }
 
 export async function getUserPosts({

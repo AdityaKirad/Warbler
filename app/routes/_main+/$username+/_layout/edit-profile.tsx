@@ -8,12 +8,12 @@ import {
 } from "~/components/ui/dialog";
 import { useState } from "react";
 import { Link, useFetcher } from "react-router";
-import type { LayoutLoader } from ".";
+import type { UsernameLayoutLoader } from ".";
 
 export function EditProfile({
   user,
 }: {
-  user: NonNullable<Awaited<ReturnType<LayoutLoader>>>;
+  user: NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>>["data"];
 }) {
   const fetcher = useFetcher();
   const [dialog, dialogSet] = useState(false);
@@ -30,7 +30,7 @@ export function EditProfile({
         <fetcher.Form className="flex flex-col gap-4">
           <DialogTitle className="ml-12">Edit Profile</DialogTitle>
           <div className="relative [--header-height:12.5rem]">
-            {user.coverImage ? (
+            {user?.coverImage ? (
               <Link to="cover_image"></Link>
             ) : (
               <div className="bg-muted h-(--header-height)" />
@@ -38,8 +38,8 @@ export function EditProfile({
             <div className="bg-background absolute top-[calc(var(--header-height)-var(--photo-size)/2)] left-4 rounded-full p-1 [--photo-size:7.5rem]">
               <img
                 className="size-(--photo-size) rounded-full"
-                src={user.photo ?? DefaultProfilePicture}
-                alt={user.name ?? "User profile"}
+                src={user?.photo ?? DefaultProfilePicture}
+                alt={user?.name ?? "User profile"}
                 decoding="async"
                 loading="lazy"
               />

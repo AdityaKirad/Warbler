@@ -36,7 +36,7 @@ export function VerificationMail(props: Readonly<MailProps>) {
                 alt="Warbler"
                 className="mr-0 ml-auto bg-black bg-cover bg-no-repeat text-white italic"
                 height={48}
-                src={`${process.env.URL}/logo-small.webp`}
+                src={`${process.env.APP_URL}/logo-small.webp`}
                 style={{ shapeMargin: "12px" }}
                 width={48}
               />

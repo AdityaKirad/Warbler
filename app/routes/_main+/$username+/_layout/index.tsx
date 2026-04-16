@@ -15,7 +15,7 @@ import { Button } from "~/components/ui/button";
 import { useUser } from "~/hooks/use-user";
 import { formatNumber } from "~/lib/utils";
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
-import { Link, Outlet } from "react-router";
+import { data, Link, Outlet } from "react-router";
 import type { Route } from "./+types";
 import { ProfileData } from "./profile-data";
 import { ProfileHeader } from "./profile-header";
@@ -27,7 +27,7 @@ export const USERNAME_LAYOUT_ROUTE_ID =
   "routes/_main+/$username+/_layout/index";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  const currentUser = await getUser(request);
+  const { session, clearSessionHeader } = await getUser(request);
 
   const { pathname } = new URL(request.url);
 
@@ -60,25 +60,23 @@ export async function loader({ params, request }: Route.LoaderArgs) {
               ),
           ),
         )
-      : and(
-          or(
-            and(eq(tweet.userId, user.id), isNull(tweet.replyToTweetId)),
-            inArray(
-              tweet.id,
-              db
-                .select({ tweetId: tweetInteraction.tweetId })
-                .from(tweetInteraction)
-                .where(
-                  and(
-                    eq(tweetInteraction.userId, user.id),
-                    eq(tweetInteraction.type, "repost"),
-                  ),
+      : or(
+          and(eq(tweet.userId, user.id), isNull(tweet.replyToTweetId)),
+          inArray(
+            tweet.id,
+            db
+              .select({ tweetId: tweetInteraction.tweetId })
+              .from(tweetInteraction)
+              .where(
+                and(
+                  eq(tweetInteraction.userId, user.id),
+                  eq(tweetInteraction.type, "repost"),
                 ),
-            ),
+              ),
           ),
         );
 
-  const [data] = await db
+  const [userData] = await db
     .select({
       id: user.id,
       name: user.name,
@@ -99,14 +97,14 @@ export async function loader({ params, request }: Route.LoaderArgs) {
         posts: db.$count(tweet, where),
       },
 
-      ...(currentUser?.user.id
+      ...(session?.user.id
         ? {
             following: sql<boolean>`
               EXISTS(
                 SELECT 1 
                 FROM ${userFollow} 
                 WHERE ${userFollow.followingId} = ${user.id} 
-                AND ${userFollow.followerId} = ${currentUser.user.id}
+                AND ${userFollow.followerId} = ${session.user.id}
               )
             `,
           }
@@ -115,7 +113,9 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     .from(user)
     .where(eq(user.username, params.username));
 
-  return data;
+  return data(userData, {
+    headers: clearSessionHeader ? { "set-cookie": clearSessionHeader } : {},
+  });
 }
 
 export default function Layout({ loaderData }: Route.ComponentProps) {
@@ -135,14 +135,18 @@ export default function Layout({ loaderData }: Route.ComponentProps) {
             <div className="mt-14 flex flex-col gap-2 p-4">
               <ProfileData user={loaderData} />
               <div className="[&_span]:text-muted-foreground flex gap-4">
-                <p>
+                <Link
+                  className="decoration-1 hover:underline focus-visible:underline"
+                  to="following">
                   {formatNumber(loaderData.count.following)}{" "}
-                  <span>Following</span>
-                </p>
-                <p>
+                  <span className="text-sm">Following</span>
+                </Link>
+                <Link
+                  className="decoration-1 hover:underline focus-visible:underline"
+                  to="followers">
                   {formatNumber(loaderData.count.followers)}{" "}
-                  <span>Followers</span>
-                </p>
+                  <span className="text-sm">Followers</span>
+                </Link>
               </div>
             </div>
             <Tabs user={loaderData} />

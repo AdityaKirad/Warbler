@@ -1,7 +1,7 @@
 import { db, tweet } from "~/.server/drizzle";
 import { requireUser } from "~/.server/utils";
 import { and, eq } from "drizzle-orm";
-import { createCookie, data, redirect } from "react-router";
+import { createCookie, redirect } from "react-router";
 import type { Route } from "./+types/delete";
 
 export const deletePostToastCookie = createCookie("__delete_post_toast", {
@@ -25,9 +25,9 @@ export async function action({ params, request }: Route.ActionArgs) {
 
   const toastValue = res.length ? "success" : "error";
   const referer = request.headers.get("referer") ?? "/home";
-  const url = new URL(referer, process.env.URL);
+  const url = new URL(referer, process.env.APP_URL);
 
-  throw data(null, {
+  throw redirect(url.toString(), {
     headers: {
       "set-cookie": await deletePostToastCookie.serialize(toastValue, {
         path: url.pathname,

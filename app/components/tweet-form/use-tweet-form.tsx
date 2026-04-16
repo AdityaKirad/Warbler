@@ -21,7 +21,7 @@ export function useTweetForm({
 }> = {}) {
   const fetcher = useFetcher<typeof action>({ key: NEW_TWEET_FETCHER_KEY });
   const isPending = useIsPending();
-  const { user } = useRequiredUser();
+  const user = useRequiredUser();
 
   const maxCharCount = user.profileVerified ? 1120 : 280;
   const editor = useEditor({
@@ -54,8 +54,6 @@ export function useTweetForm({
   useEffect(() => {
     const { data, state } = fetcher;
 
-    console.table({ data, state });
-
     if (state !== "idle" || !data) {
       return;
     }
@@ -72,11 +70,11 @@ export function useTweetForm({
       toast(
         <div>
           Your post was sent.{" "}
-          <Link to={`/${user?.username}/status/${data.id}`}>View</Link>
+          <Link to={`/${user.username}/status/${data.id}`}>View</Link>
         </div>,
       );
     }
-  }, [editor, fetcher, onSuccess, onError, user?.username]);
+  }, [editor, fetcher, onSuccess, onError, user.username]);
 
   function handleSubmit(evt: React.FormEvent<HTMLFormElement>) {
     evt.preventDefault();

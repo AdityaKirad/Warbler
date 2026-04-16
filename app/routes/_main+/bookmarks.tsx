@@ -3,12 +3,11 @@ import { PageTitle } from "~/components/page-title";
 import { SearchFollowSidebar } from "~/components/search-follow-sidebar";
 import { Spinner } from "~/components/spinner";
 import { TweetCard } from "~/components/tweet-card";
+import { useDeboucedValue } from "~/hooks/use-debouced-value";
 import { useInfiniteTweetsScroll } from "~/hooks/use-infinite-tweets-scroll";
 import Fuse from "fuse.js";
 import { SearchIcon } from "lucide-react";
-import { useQueryState } from "nuqs";
-import { useMemo } from "react";
-import { useNavigation } from "react-router";
+import { useEffect, useMemo, useState } from "react";
 import type { Route } from "./+types/bookmarks";
 import { getBookmarksFeed, PAGE_SIZE } from "./feed-queries.server";
 
@@ -39,9 +38,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export default function Page({ loaderData }: Route.ComponentProps) {
-  const [search, searchSet] = useQueryState("query");
+  const [search, searchSet] = useState("");
   const { fetcher, loadMoreRef, tweets } = useInfiniteTweetsScroll(loaderData);
-  const navigation = useNavigation();
+  const debouncedSearch = useDeboucedValue(search);
+
+  const isSearching = search !== debouncedSearch;
+
   const fuse = useMemo(
     () =>
       new Fuse(tweets, {
@@ -49,8 +51,21 @@ export default function Page({ loaderData }: Route.ComponentProps) {
       }),
     [tweets],
   );
-  const results = fuse.search(search ?? "").map((res) => res.item);
-  const isSearching = navigation.state !== "idle";
+
+  const results = fuse.search(debouncedSearch).map((res) => res.item);
+
+  useEffect(() => {
+    const value = debouncedSearch.trim();
+    const url = new URL(window.location.href);
+
+    if (value) {
+      url.searchParams.set("search", value);
+    } else {
+      url.searchParams.delete("search");
+    }
+
+    history.replaceState(null, "", url.pathname + url.search);
+  }, [debouncedSearch]);
   return (
     <div className="flex min-h-screen justify-between">
       <div className="min-h-screen w-150 border-x">
@@ -61,7 +76,7 @@ export default function Page({ loaderData }: Route.ComponentProps) {
             <input
               className="outline-border absolute inset-0 grow rounded-full pr-2 pl-8 outline-2 transition-colors focus-visible:caret-blue-500 focus-visible:outline-blue-500"
               placeholder="Search bookmarks"
-              value={search ?? ""}
+              value={search}
               onChange={(evt) => searchSet(evt.target.value)}
             />
           </div>
@@ -71,14 +86,7 @@ export default function Page({ loaderData }: Route.ComponentProps) {
             <Spinner className="mx-auto mt-8 text-blue-500" />
           ) : results.length ? (
             results.map((bookmark) => (
-              <TweetCard
-                key={bookmark.id}
-                {...bookmark}
-                viewer={{
-                  ...bookmark.viewer,
-                  bookmarked: true,
-                }}
-              />
+              <TweetCard key={bookmark.id} {...bookmark} />
             ))
           ) : (
             <div className="mx-auto w-full max-w-80 py-8">
@@ -93,16 +101,7 @@ export default function Page({ loaderData }: Route.ComponentProps) {
             </div>
           )
         ) : (
-          tweets.map((tweet) => (
-            <TweetCard
-              key={tweet.id}
-              {...tweet}
-              viewer={{
-                ...tweet.viewer,
-                bookmarked: true,
-              }}
-            />
-          ))
+          tweets.map((tweet) => <TweetCard key={tweet.id} {...tweet} />)
         )}
         <div ref={loadMoreRef} aria-hidden />
         {fetcher.state === "loading" && (

@@ -57,6 +57,15 @@ export async function action({
     };
   }
 
+  await fetch(`${process.env.PARTYKIT_URL}/parties/main/home`, {
+    method: "POST",
+    signal: AbortSignal.timeout(1000),
+    body: JSON.stringify({
+      id: createdTweet.id,
+      content: parsed.content,
+    }),
+  });
+
   return { status: "success", id: createdTweet.id, value: "" };
 }
 

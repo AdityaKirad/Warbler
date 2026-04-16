@@ -10,14 +10,21 @@ import type { Route } from "./+types";
 import { dobSchema, MAX_IMAGE_SIZE, usernameSchema } from "./schema";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const { user } = await requireUser(request);
+  const {
+    user: { id },
+  } = await requireUser(request);
 
-  return generateUsernameSuggestions(db, {
-    name: user.name,
-    email: user.email,
-    dob: user.dob,
+  const data = await db.query.user.findFirst({
+    columns: { name: true, email: true, dob: true },
+    where: (user, { eq }) => eq(user.id, id),
+  });
+
+  const suggestions = await generateUsernameSuggestions(db, {
+    ...data!,
     count: 5,
   });
+
+  return Response.json({ suggestions });
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -33,13 +40,33 @@ export async function action({ request }: Route.ActionArgs) {
     case "dob":
       return handleUpdateDob(formData, user.id);
     case "username":
-      return handleUsernameUpdate(formData, user.id);
+      return handleUsernameUpdate(formData, {
+        userId: user.id,
+        username: user.username,
+      });
     default:
       return null;
   }
 }
 
 async function handleAvatarUpdate(request: Request, userId: string) {
+  const url = new URL(request.url);
+
+  const intent = url.searchParams.get("intent");
+
+  if (intent === "skip") {
+    await db
+      .update(user)
+      .set({
+        onboardingStepsCompleted: sql`
+          json_insert(
+            ${user.onboardingStepsCompleted}, '$[#]', 'profile-photo'
+          )
+        `,
+      })
+      .where(eq(user.id, userId));
+  }
+
   async function uploadHandler(fileUpload: FileUpload) {
     if (fileUpload.fieldName !== "avatar") {
       return undefined;
@@ -52,7 +79,7 @@ async function handleAvatarUpdate(request: Request, userId: string) {
         `data:${fileUpload.type};base64,${base64}`,
         {
           folder: "profile-pictures",
-          allowed_formats: ["jpg", "png", "webp", ""],
+          allowed_formats: ["jpg", "png", "webp"],
           resource_type: "image",
           transformation: {
             width: 400,
@@ -76,14 +103,17 @@ async function handleAvatarUpdate(request: Request, userId: string) {
     uploadHandler,
   );
 
-  const intent = formData.get("intent");
   const photo = formData.get("avatar")?.toString();
 
   await db
     .update(user)
     .set({
-      ...(intent === "update" ? { photo } : {}),
-      onboardingStepsCompleted: sql`json_insert(${user.onboardingStepsCompleted}, '$[#]', 'profile-photo')`,
+      photo,
+      onboardingStepsCompleted: sql`
+        json_insert(
+          ${user.onboardingStepsCompleted}, '$[#]', 'profile-photo'
+        )
+      `,
     })
     .where(eq(user.id, userId));
 
@@ -108,20 +138,47 @@ async function handleUpdateDob(formData: FormData, userId: string) {
   throw redirect("/home");
 }
 
-async function handleUsernameUpdate(formData: FormData, userId: string) {
+async function handleUsernameUpdate(
+  formData: FormData,
+  { userId, username }: { userId: string; username: string },
+) {
   const submission = parseWithZod(formData, { schema: usernameSchema });
 
   if (submission.status !== "success") {
     return submission.reply();
   }
-  const { username } = submission.value;
+
   const intent = formData.get("intent");
+
+  const onboardingUpdateSql = sql`json_insert(${user.onboardingStepsCompleted}, '$[#]', 'username')`;
+
+  if (intent === "update" && username !== submission.value.username) {
+    const isUsernameTaken = await db.query.user.findFirst({
+      columns: { id: true },
+      where: (user, { eq }) => eq(user.username, submission.value.username),
+    });
+
+    if (!isUsernameTaken) {
+      await db
+        .update(user)
+        .set({
+          username: submission.value.username,
+          onboardingStepsCompleted: onboardingUpdateSql,
+        })
+        .where(eq(user.id, userId));
+    }
+
+    return submission.reply({
+      fieldErrors: {
+        username: ["This username is already taken"],
+      },
+    });
+  }
 
   await db
     .update(user)
     .set({
-      ...(intent === "update" ? { username } : {}),
-      onboardingStepsCompleted: sql`json_insert(${user.onboardingStepsCompleted}, '$[#]', 'username')`,
+      onboardingStepsCompleted: onboardingUpdateSql,
     })
     .where(eq(user.id, userId));
 

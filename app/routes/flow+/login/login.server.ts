@@ -1,24 +1,24 @@
 import {
-  createMultiSessionCookie,
+  createMultiSessionCookieId,
+  MULTI_SESSION_COOKIE_PREFIX,
   sessionCookie,
+  sessionCookieOptions,
 } from "~/.server/cookies/session";
 import type { SessionSelectType, UserSelectType } from "~/.server/drizzle";
-import { redirect } from "react-router";
+import { createCookie, redirect } from "react-router";
 import { safeRedirect } from "remix-utils/safe-redirect";
 
 export async function handleNewSession({
-  headers,
   redirectTo,
   session,
   user: _user,
+  headers,
 }: {
-  headers?: HeadersInit;
-  redirectTo?: string | null;
   session: SessionSelectType;
-  user: UserSelectType;
-}) {
-  const multiSessionTokenCookie = createMultiSessionCookie(session.token);
-
+  user: Pick<UserSelectType, "name" | "username" | "photo" | "profileVerified">;
+  headers?: HeadersInit;
+  redirectTo: string | null;
+}): Promise<never> {
   headers = new Headers(headers);
 
   headers.append(
@@ -29,12 +29,13 @@ export async function handleNewSession({
   );
   headers.append(
     "set-cookie",
-    await multiSessionTokenCookie.serialize(session.token, {
+    await createCookie(
+      `${MULTI_SESSION_COOKIE_PREFIX}${createMultiSessionCookieId(session.token)}`,
+      sessionCookieOptions,
+    ).serialize(session.token, {
       expires: session.expiresAt,
     }),
   );
 
-  throw redirect(safeRedirect(redirectTo, "/home"), {
-    headers,
-  });
+  throw redirect(safeRedirect(redirectTo ?? "/home"), { headers });
 }

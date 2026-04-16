@@ -4,19 +4,27 @@ import { Field } from "~/components/forms";
 import { DiscordLogin, GoogleLogin } from "~/components/social-login";
 import { Spinner } from "~/components/spinner";
 import { Button } from "~/components/ui/button";
+import { DialogTitle } from "~/components/ui/dialog";
 import { Separator } from "~/components/ui/separator";
 import { useIsPending } from "~/hooks/use-is-pending";
+import { useUser } from "~/hooks/use-user";
 import { IdentifierSchema } from "~/lib/user-validation";
-import { Form, Link, useActionData, useLoaderData } from "react-router";
+import type { FetcherWithComponents } from "react-router";
+import { Form, Link } from "react-router";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
-import type { action, loader } from ".";
+import type { action } from ".";
 import { createCredentialLoginSchema } from ".";
 
-export function CredentialLogin() {
-  const lastResult = useActionData<typeof action>();
-  const schema = createCredentialLoginSchema(
-    lastResult?.variant?.type as string,
-  );
+export function CredentialLogin<T>({
+  lastResult,
+  fetcher,
+}: {
+  lastResult: Awaited<ReturnType<typeof action>> | undefined;
+  fetcher?: FetcherWithComponents<T>;
+}) {
+  const user = useUser();
+  const variant = lastResult?.variant?.type;
+  const schema = createCredentialLoginSchema(variant as string);
   const [form, fields] = useForm({
     id: "login",
     defaultValue: {
@@ -26,11 +34,16 @@ export function CredentialLogin() {
     constraint: getZodConstraint(schema),
     onValidate: ({ formData }) => parseWithZod(formData, { schema }),
   });
+  const Title = fetcher ? DialogTitle : "h2";
+  const CredentialForm = fetcher ? fetcher.Form : Form;
   return (
     <>
-      <h2 className="text-heading">Enter your password</h2>
+      <Title className="text-heading">Enter your password</Title>
 
-      <Form method="POST" className="contents" {...getFormProps(form)}>
+      <CredentialForm
+        method="POST"
+        className="contents"
+        {...getFormProps(form)}>
         <HoneypotInputs />
 
         <Field
@@ -51,7 +64,7 @@ export function CredentialLogin() {
           errors={fields.password.errors}
         />
 
-        <input type="hidden" name="variant" value={lastResult?.variant?.type} />
+        <input type="hidden" name="variant" value={variant} />
 
         <Button
           className="mt-auto rounded-full"
@@ -61,42 +74,59 @@ export function CredentialLogin() {
           Log in
         </Button>
 
-        <p className="text-muted-foreground my-4 text-sm">
-          Don't have an account?{" "}
-          <Link
-            className="text-blue-500 hover:underline focus-visible:underline"
-            to="/flow/signup"
-            aria-label="Sign up">
-            Sign up
-          </Link>
-        </p>
-      </Form>
+        {!user && (
+          <p className="text-muted-foreground my-4 text-sm">
+            Don't have an account?{" "}
+            <Link
+              className="text-blue-500 hover:underline focus-visible:underline"
+              to="/flow/signup"
+              aria-label="Sign up">
+              Sign up
+            </Link>
+          </p>
+        )}
+      </CredentialForm>
     </>
   );
 }
 
-export function GetLoginVariant({ redirectTo }: { redirectTo: string | null }) {
+export function GetLoginVariant<T>({
+  flash,
+  lastResult,
+  redirectTo,
+  fetcher,
+}: {
+  flash: string | undefined;
+  lastResult: Awaited<ReturnType<typeof action>>["result"];
+  redirectTo: string | null;
+  fetcher?: FetcherWithComponents<T>;
+}) {
   const isPending = useIsPending();
-  const lastResult = useActionData<typeof action>();
-  const { flash } = useLoaderData<typeof loader>();
+  const user = useUser();
   const [form, fields] = useForm({
-    lastResult: lastResult?.result,
+    lastResult,
     id: "login",
     constraint: getZodConstraint(IdentifierSchema),
     onValidate({ formData }) {
       return parseWithZod(formData, { schema: IdentifierSchema });
     },
   });
+  const Title = fetcher ? DialogTitle : "h2";
+  const VariantForm = fetcher ? fetcher.Form : Form;
   return (
     <>
-      <h2 className="text-heading">Sign in to Warbler</h2>
+      <Title className="text-heading">Sign in to Warbler</Title>
       <div className="contents">
         <GoogleLogin />
         <DiscordLogin />
 
         <Separator />
 
-        <Form className="contents" method="POST" {...getFormProps(form)}>
+        <VariantForm
+          className="contents"
+          action="/flow/login"
+          method="POST"
+          {...getFormProps(form)}>
           <HoneypotInputs />
 
           <Field
@@ -107,20 +137,24 @@ export function GetLoginVariant({ redirectTo }: { redirectTo: string | null }) {
             }}
           />
 
-          <div className="text-destructive contents text-center text-sm">
-            {form.errors && <p>{form.errors.join(", ")}</p>}
-            {flash && <p>{flash}</p>}
-          </div>
+          {form.errors && (
+            <p className="text-destructive text-center text-sm">
+              {form.errors.join(", ")}
+            </p>
+          )}
+          {flash && (
+            <p className="text-destructive text-center text-sm">{flash}</p>
+          )}
 
           <Button
             className="rounded-full"
             disabled={isPending}
             type="submit"
             name="intent"
-            value="get_login_variant">
+            value="get-login-variant">
             {isPending ? <Spinner /> : "Next"}
           </Button>
-        </Form>
+        </VariantForm>
 
         <Button className="rounded-full" variant="outline" asChild>
           <Link to="/flow/password-reset" aria-label="Forget Password">
@@ -129,21 +163,23 @@ export function GetLoginVariant({ redirectTo }: { redirectTo: string | null }) {
         </Button>
       </div>
 
-      <p className="text-neutral-700">
-        Don't have an account?
-        <Button asChild className="text-blue-500" variant="link">
-          <Link
-            to={{
-              pathname: "/flow/signup",
-              search: redirectTo
-                ? `?redirectTo=${encodeURIComponent(redirectTo)}`
-                : "",
-            }}
-            aria-label="Sign up">
-            Sign up
-          </Link>
-        </Button>
-      </p>
+      {!user && (
+        <p className="text-neutral-700">
+          Don't have an account?
+          <Button asChild className="text-blue-500" variant="link">
+            <Link
+              to={{
+                pathname: "/flow/signup",
+                search: redirectTo
+                  ? `?redirectTo=${encodeURIComponent(redirectTo)}`
+                  : "",
+              }}
+              aria-label="Sign up">
+              Sign up
+            </Link>
+          </Button>
+        </p>
+      )}
     </>
   );
 }

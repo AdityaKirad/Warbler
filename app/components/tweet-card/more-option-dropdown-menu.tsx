@@ -7,8 +7,8 @@ import {
   Trash2,
   VolumeOffIcon,
 } from "lucide-react";
-import { Form, Link, useFetcher } from "react-router";
 import { useEffect } from "react";
+import { Form, Link, useFetcher } from "react-router";
 import { toast } from "sonner";
 import { UserPlusIcon } from "../icons/user-plus";
 import { Button } from "../ui/button";
@@ -39,7 +39,7 @@ export function MoreOptionDropdownMenu({
   tweetId,
   username,
 }: MoreOptionDropdownMenuProps) {
-  const user = useUser()?.user;
+  const user = useUser();
   if (!user) {
     return null;
   }
@@ -49,6 +49,7 @@ export function MoreOptionDropdownMenu({
         <DropdownMenuTrigger asChild>
           <Button
             className="float-right size-8 rounded-full"
+            type="button"
             variant="ghost"
             size="icon"
             aria-label="More Options">

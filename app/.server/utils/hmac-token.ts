@@ -1,8 +1,8 @@
 import crypto from "crypto";
 import { base64url } from "~/lib/utils";
 
-export function getSignedToken(data: object) {
-  const signature = getSignature(JSON.stringify(data)).toString("base64url");
+export function getSignedToken<T>(data: T) {
+  const signature = getSignature(data).toString("base64url");
 
   return base64url.encode(JSON.stringify({ ...data, signature }));
 }
@@ -18,7 +18,7 @@ export function parseSignedToken<T>(token: string) {
     const { signature, ...data } = JSON.parse(decoded);
 
     const signatureBuffer = Buffer.from(signature, "base64url");
-    const expectedSignature = getSignature(JSON.stringify(data));
+    const expectedSignature = getSignature(data);
 
     if (signatureBuffer.length !== expectedSignature.length) {
       return null;
@@ -32,9 +32,10 @@ export function parseSignedToken<T>(token: string) {
   }
 }
 
-function getSignature(data: string) {
+function getSignature<T>(data: T) {
+  const encoder = new TextEncoder();
   return crypto
-    .createHmac("sha256", process.env.AUTH_SECRET)
-    .update(data)
+    .createHmac("SHA-256", process.env.AUTH_SECRET)
+    .update(encoder.encode(JSON.stringify(data)))
     .digest();
 }

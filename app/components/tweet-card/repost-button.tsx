@@ -1,9 +1,9 @@
 import { useUser } from "~/hooks/use-user";
 import { cn } from "~/lib/utils";
 import { PenLineIcon, Repeat2Icon } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { FetcherWithComponents } from "react-router";
 import { Link } from "react-router";
-import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -29,9 +29,9 @@ type RepostButtonProps = {
 };
 
 export function RepostButton(props: RepostButtonProps) {
-  const currentUser = useUser();
+  const user = useUser();
 
-  return currentUser ? (
+  return user ? (
     <AuthenticatedContent {...props} />
   ) : (
     <NonAuthenticatedContent {...props} />
@@ -79,7 +79,9 @@ function AuthenticatedContent({
           onSelect={() => {
             interactionSet((prev) => ({
               reposted: !prev.reposted,
-              repostCount: prev.reposted ? prev.repostCount - 1 : prev.repostCount + 1,
+              repostCount: prev.reposted
+                ? prev.repostCount - 1
+                : prev.repostCount + 1,
             }));
             const formData = new FormData();
             formData.set("interaction", "repost");

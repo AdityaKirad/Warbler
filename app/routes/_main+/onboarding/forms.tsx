@@ -13,9 +13,9 @@ import {
 import { useIsPending } from "~/hooks/use-is-pending";
 import { useUser } from "~/hooks/use-user";
 import { CameraIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFetcher } from "react-router";
-import type { action, loader } from ".";
+import type { action } from ".";
 import { avatarSchema, dobSchema, usernameSchema } from "./schema";
 
 export function DOB({
@@ -129,8 +129,6 @@ export function ProfilePhoto({
       <Button
         className="mt-auto rounded-full"
         type="submit"
-        name="intent"
-        value="update"
         disabled={isPending}>
         {isPending ? <Spinner /> : hasNextStep ? "Next" : "Save"}
       </Button>
@@ -139,8 +137,7 @@ export function ProfilePhoto({
         className="mb-4 rounded-full"
         variant="outline"
         type="submit"
-        name="intent"
-        value="skip"
+        formAction="/onboarding?intent=skip"
         disabled={isPending}>
         Skip for now
       </Button>
@@ -159,20 +156,31 @@ export function Username({
 }) {
   const isPending = useIsPending();
   const fetcher = useFetcher<typeof action>();
-  const usernameSuggestion = useFetcher<typeof loader>();
-  const currentUser = useUser();
-  const [username, usernameSet] = useState(currentUser?.user.username);
+  const user = useUser();
+  const [suggestions, suggestionsSet] = useState<string[]>([]);
+  const [showAllSuggestions, showAllSuggestionsSet] = useState(false);
   const [form, fields] = useForm({
     id: "username",
     defaultValue: {
-      username,
+      username: user?.username,
     },
     lastResult: fetcher.data,
     constraint: getZodConstraint(usernameSchema),
     onValidate: ({ formData }) =>
       parseWithZod(formData, { schema: usernameSchema }),
   });
-  // usernameSuggestion.load("/onboarding");
+
+  const visibleSuggestions = showAllSuggestions
+    ? suggestions
+    : suggestions.slice(0, 2);
+
+  useEffect(() => {
+    (async () => {
+      const res = await fetch("/onboarding");
+      const data = await res.json();
+      suggestionsSet(data.suggestions);
+    })();
+  }, []);
   return (
     <fetcher.Form
       method="POST"
@@ -189,17 +197,33 @@ export function Username({
         }}
         errors={fields.username.errors}
       />
-      <div>
-        {usernameSuggestion.data?.map((suggestion) => (
+      <div className="flex flex-wrap gap-2">
+        {visibleSuggestions.map((suggestion) => (
           <Button
             key={suggestion}
+            className="h-fit p-0 text-blue-500"
             type="button"
             variant="link"
-            onClick={() => usernameSet(suggestion)}>
+            onClick={() =>
+              form.update({
+                name: fields.username.name,
+                value: suggestion,
+              })
+            }>
             {suggestion}
           </Button>
         ))}
       </div>
+
+      {suggestions.length > 2 && (
+        <Button
+          className="size-fit p-0 text-blue-500"
+          type="button"
+          variant="link"
+          onClick={() => showAllSuggestionsSet((prev) => !prev)}>
+          {showAllSuggestions ? "Show less" : "Show more"}
+        </Button>
+      )}
 
       <input type="hidden" name="update_field" value="username" />
 
@@ -210,6 +234,16 @@ export function Username({
         value="update"
         disabled={isPending}>
         {isPending ? <Spinner /> : hasNextStep ? "Next" : "Save"}
+      </Button>
+
+      <Button
+        className="rounded-full"
+        variant="outline"
+        type="submit"
+        name="intent"
+        value="skip"
+        disabled={isPending}>
+        Skip for now
       </Button>
     </fetcher.Form>
   );

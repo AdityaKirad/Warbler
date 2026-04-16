@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const zodEnv = z.object({
+  APP_URL: z.string().url(),
   AUTH_SECRET: z.string().length(44),
   CLOUDINARY_API_KEY: z.string(),
   CLOUDINARY_API_SECRET: z.string(),
@@ -13,8 +14,8 @@ const zodEnv = z.object({
   GOOGLE_CLIENT_SECRET: z.string(),
   HONEYPOT_SEED: z.string().length(44),
   NODE_ENV: z.enum(["development", "production", "test"]),
+  PARTYKIT_URL: z.string().url(),
   PLUNK_API_KEY: z.string(),
-  URL: z.string().url(),
 });
 
 try {

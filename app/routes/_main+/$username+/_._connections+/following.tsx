@@ -11,9 +11,10 @@ export function meta({ matches }: Route.MetaArgs) {
   const match = matches.find(
     (match) => match?.id === CONNECTION_LAYOUT_ROUTE_ID,
   );
-  const user = (
-    match?.loaderData as Awaited<ReturnType<CONNECTION_LAYOUT_LOADER>>
-  ).user;
+  const user = match?.loaderData as Awaited<
+    ReturnType<CONNECTION_LAYOUT_LOADER>
+  >;
+
   return [
     {
       title: `People followed by ${user?.name} (@${user?.username}) / Warbler`,
@@ -22,13 +23,17 @@ export function meta({ matches }: Route.MetaArgs) {
 }
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  const currentUser = await getUser(request);
+  const { session, clearSessionHeader } = await getUser(request);
 
-  if (!currentUser) {
-    throw redirect(params.username);
+  if (!session) {
+    throw redirect(params.username, {
+      headers: {
+        "set-cookie": clearSessionHeader,
+      },
+    });
   }
 
-  const followedUsers = await db
+  return db
     .select({
       id: user.id,
       name: user.name,
@@ -37,9 +42,14 @@ export async function loader({ params, request }: Route.LoaderArgs) {
       bio: user.bio,
       profileVerified: user.profileVerified,
 
-      following: sql<
-        boolean | null
-      >`CASE WHEN ${user.id} != ${currentUser.user.id} THEN EXISTS(SELECT 1 FROM ${userFollow} WHERE ${userFollow.followingId} = ${user.id} AND ${userFollow.followerId} = ${currentUser.user.id}) ELSE NULL END`,
+      following: sql<boolean | null>`
+        EXISTS(
+          SELECT 1 
+          FROM ${userFollow} 
+          WHERE ${userFollow.followingId} = ${user.id} 
+          AND ${userFollow.followerId} = ${session.user.id}
+        ) 
+      `,
     })
     .from(userFollow)
     .innerJoin(user, eq(userFollow.followingId, user.id))
@@ -52,12 +62,8 @@ export async function loader({ params, request }: Route.LoaderArgs) {
           .where(eq(user.username, params.username)),
       ),
     );
-
-  return { followedUsers };
 }
 
-export default function Page({
-  loaderData: { followedUsers },
-}: Route.ComponentProps) {
-  return <ConnectionList connections={followedUsers} />;
+export default function Page({ loaderData }: Route.ComponentProps) {
+  return <ConnectionList connections={loaderData} />;
 }

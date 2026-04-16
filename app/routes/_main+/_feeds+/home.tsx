@@ -9,14 +9,12 @@ import { useOptimisticTweet } from "./+use-optimistic-tweet";
 export const meta = () => [{ title: "Home / Warbler" }];
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const {
-    user: { id: userId },
-  } = await requireUser(request);
+  const { user } = await requireUser(request);
 
   const url = new URL(request.url);
   const cursor = url.searchParams.get("cursor");
 
-  const tweets = await getHomeFeed({ cursor, userId });
+  const tweets = await getHomeFeed({ cursor, userId: user.id });
 
   return {
     tweets,
@@ -28,10 +26,9 @@ export async function loader({ request }: Route.LoaderArgs) {
   };
 }
 
-function Page({ loaderData }: Route.ComponentProps) {
-  const { fetcher, loadMoreRef, tweets } = useInfiniteTweetsScroll(loaderData);
-
+export default function Page({ loaderData }: Route.ComponentProps) {
   const optimisticTweet = useOptimisticTweet();
+  const { fetcher, loadMoreRef, tweets } = useInfiniteTweetsScroll(loaderData);
 
   const displayTweets = optimisticTweet ? [optimisticTweet, ...tweets] : tweets;
 
@@ -47,5 +44,3 @@ function Page({ loaderData }: Route.ComponentProps) {
     </>
   );
 }
-
-export default Page;

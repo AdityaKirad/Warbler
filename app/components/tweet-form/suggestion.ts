@@ -1,6 +1,8 @@
+import type { MentionNodeAttrs } from "@tiptap/extension-mention";
 import { ReactRenderer } from "@tiptap/react";
 import type {
   SuggestionKeyDownProps,
+  SuggestionOptions,
   SuggestionProps,
 } from "@tiptap/suggestion";
 import type { UserSelectType } from "~/.server/drizzle";
@@ -76,7 +78,7 @@ export const suggestion = {
     >;
 
     return {
-      onStart: (props: SuggestionProps<MentionUser, MentionSelected>) => {
+      onStart: (props) => {
         component = new ReactRenderer(MentionList, {
           props: {
             ...props,
@@ -103,7 +105,7 @@ export const suggestion = {
         }
       },
 
-      onUpdate(props: SuggestionProps<MentionUser, MentionSelected>) {
+      onUpdate(props) {
         component.updateProps({
           ...props,
           onNoResults: () => {
@@ -122,7 +124,7 @@ export const suggestion = {
         }
       },
 
-      onKeyDown(props: SuggestionKeyDownProps) {
+      onKeyDown(props) {
         if (props.event.key === "Escape") {
           component.destroy();
 
@@ -137,4 +139,4 @@ export const suggestion = {
       },
     };
   },
-};
+} satisfies Omit<SuggestionOptions<MentionUser, MentionNodeAttrs>, "editor">;

@@ -34,7 +34,7 @@ export function CommentButton(props: {
   user: Pick<UserSelectType, "name" | "username" | "photo">;
 }) {
   const [dialog, dialogSet] = useState(false);
-  const currentUser = useUser();
+  const user = useUser();
   return (
     <Dialog open={dialog} onOpenChange={dialogSet}>
       <DialogTrigger className="group flex items-center gap-0.5 transition-colors outline-none hover:text-blue-500 focus-visible:text-blue-500">
@@ -43,7 +43,7 @@ export function CommentButton(props: {
         </div>
         <span>{props.replyCount}</span>
       </DialogTrigger>
-      {currentUser ? (
+      {user ? (
         <AuthenicatedContent dialogSet={() => dialogSet(false)} {...props} />
       ) : (
         <NonAuthenticatedContent name={props.user.name} />

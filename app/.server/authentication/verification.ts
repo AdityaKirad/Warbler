@@ -2,6 +2,8 @@ import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { db, verification } from "../drizzle";
 import { getSignedToken } from "../utils";
+import { generateRandomString } from "../utils/generate-random-string";
+import { getHash } from "../utils/get-hash";
 import { getExpirationDate } from "./utils";
 
 type CreateVerification = { target: string } & (
@@ -13,13 +15,16 @@ type CreateVerification = { target: string } & (
 export type VerificationType = CreateVerification["type"];
 
 export async function createVerification(args: CreateVerification) {
-  const code = generateVerificationCode();
+  const code = generateRandomString(6, {
+    alphabet: ["A-Z", "0-9"],
+    omit: "O0I1",
+  });
 
   const identifier = `${args.type}-otp-${args.target}`;
 
   const verificationData = {
     identifier,
-    value: `${getHash(code).toString("base64url")}:0`,
+    value: `${getHash(code, true)}:0`,
     expiresAt: getExpirationDate(60 * 10),
   };
 
@@ -130,21 +135,4 @@ export async function validateVerificationCode({
   return {
     success: true,
   };
-}
-
-const getHash = (code: string) =>
-  crypto.createHash("SHA-256").update(code).digest();
-
-function generateVerificationCode(): string {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
-  const bytes = crypto.randomBytes(6);
-
-  let code = "";
-
-  for (const byte of bytes) {
-    code += alphabet[byte >> 3];
-  }
-
-  return code;
 }

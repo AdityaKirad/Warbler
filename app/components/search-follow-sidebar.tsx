@@ -1,8 +1,9 @@
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
+import { useDeboucedValue } from "~/hooks/use-debouced-value";
 import { cn, getNameInitials } from "~/lib/utils";
 import type { loader } from "~/routes/_main+/explore";
 import { SearchIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useFetcher } from "react-router";
 import { DiscordLogin, GoogleLogin } from "./social-login";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -17,9 +18,10 @@ function SidebarShell({ children }: { children: React.ReactNode }) {
 }
 
 export function SearchFollowSidebar() {
+  const [search, searchSet] = useState("");
+  const debouncedSearch = useDeboucedValue(search);
   const fetcher = useFetcher<typeof loader>();
-  const listboxRef = useRef<HTMLUListElement | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const listboxRef = useRef<React.ElementRef<"ul">>(null);
 
   const results = fetcher.data ?? [];
 
@@ -78,22 +80,14 @@ export function SearchFollowSidebar() {
     }
   }
 
-  function onChange(evt: React.ChangeEvent<HTMLInputElement>) {
-    const value = evt.target.value.trim();
-
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
+  useEffect(() => {
+    if (debouncedSearch) {
+      void fetcher.load(
+        `/explore?query=${encodeURIComponent(debouncedSearch)}`,
+      );
     }
-
-    if (!value) {
-      fetcher.load("/explore");
-      return;
-    }
-
-    debounceRef.current = setTimeout(() => {
-      fetcher.load(`/explore?query=${encodeURIComponent(value)}`);
-    }, 250);
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
 
   return (
     <SidebarShell>
@@ -118,7 +112,7 @@ export function SearchFollowSidebar() {
               : undefined
           }
           onKeyDown={onKeyDown}
-          onChange={onChange}
+          onChange={(evt) => searchSet(evt.target.value)}
         />
       </fetcher.Form>
 

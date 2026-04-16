@@ -1,10 +1,8 @@
-import crypto from "node:crypto";
 import { redirect } from "react-router";
 import { flashSessionStorage } from "../session/flash";
+import { generateRandomString } from "../utils/generate-random-string";
 
-export const createToken = (size: number) => crypto.randomBytes(size);
-
-export const createSessionToken = () => createToken(32).toString("base64url");
+export const createSessionToken = () => generateRandomString(32);
 
 export const getUserAgent = (request: Request) =>
   request.headers.get("user-agent");
@@ -25,7 +23,7 @@ export async function redirectWithFlash({
 }: {
   error: string;
   headers?: HeadersInit;
-  redirectTo?: string;
+  redirectTo?: string | null;
 }) {
   const session = await flashSessionStorage.getSession();
 
@@ -41,6 +39,7 @@ export async function redirectWithFlash({
   redirectTo = redirectTo
     ? `/flow/login?redirectTo=${redirectTo}`
     : "/flow/login";
+
   throw redirect(redirectTo, {
     headers,
   });

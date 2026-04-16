@@ -38,7 +38,7 @@ import {
 } from "~/routes/_main+/feed-queries.server";
 import { format } from "date-fns";
 import { eq } from "drizzle-orm";
-import { Link, useFetcher } from "react-router";
+import { data, Link, useFetcher } from "react-router";
 import type { Route } from "./+types";
 
 export const meta = ({ loaderData: { post } }: Route.MetaArgs) => [
@@ -48,8 +48,9 @@ export const meta = ({ loaderData: { post } }: Route.MetaArgs) => [
 ];
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  const data = await getUser(request);
-  const currentUserId = data?.user.id;
+  const { session, clearSessionHeader } = await getUser(request);
+
+  const currentUserId = session?.user.id;
 
   const [post] = await db
     .select({
@@ -88,20 +89,29 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     ? await getTweetReplies({ cursor, tweetId: post.id, userId: currentUserId })
     : [];
 
-  return { post, replies };
+  return data(
+    { post, replies },
+    {
+      headers: clearSessionHeader
+        ? {
+            "set-cookie": clearSessionHeader,
+          }
+        : {},
+    },
+  );
 }
 
 export default function Page({
   loaderData: { post, replies },
 }: Route.ComponentProps) {
-  const currentUser = useUser();
+  const user = useUser();
   return (
     <div className="flex min-h-screen justify-between">
       <div className="min-h-screen w-150 border-x">
         <PageTitle title="Post" />
-        <div className={cn("space-y-2 p-4", { "border-b": currentUser })}>
+        <div className={cn("space-y-2 p-4", { "border-b": user })}>
           <TweetContent tweet={post} />
-          {currentUser ? (
+          {user ? (
             <>
               <Separator />
               <FeedsTweetForm removePaddingAndBorders />
@@ -138,11 +148,11 @@ export default function Page({
             </>
           )}
         </div>
-        {currentUser &&
+        {user &&
           replies.map((reply) => <TweetCard key={reply.id} {...reply} />)}
       </div>
-      {currentUser ? <SearchFollowSidebar /> : <NonAuthenticatedSidebar />}
-      {!currentUser && (
+      {user ? <SearchFollowSidebar /> : <NonAuthenticatedSidebar />}
+      {!user && (
         <div className="fixed inset-x-0 bottom-0 bg-blue-500 p-2 max-sm:hidden">
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between max-xl:max-w-4xl max-lg:max-w-2xl">
             <div className="max-md:hidden">
@@ -173,7 +183,7 @@ export default function Page({
 function TweetContent({
   tweet,
 }: {
-  tweet: Awaited<ReturnType<typeof loader>>["post"];
+  tweet: Awaited<ReturnType<typeof loader>>["data"]["post"];
 }) {
   const fetcher = useFetcher();
   const formId = `tweet-${tweet.id}-engagement`;
@@ -222,8 +232,9 @@ function TweetContent({
           replyCount={tweet.count.replies}
         />
         <RepostButton
-          formId={formId}
+          fetcher={fetcher}
           name={tweet.user.name}
+          tweetId={tweet.id}
           reposted={tweet.viewer?.reposted ?? false}
           repostCount={tweet.count.reposts}
         />

@@ -18,7 +18,7 @@ const schema = z.object({
 const discord = new Discord(
   process.env.DISCORD_CLIENT_ID,
   process.env.DISCORD_CLIENT_SECRET,
-  `${process.env.URL}/flow/discord/callback`,
+  `${process.env.APP_URL}/flow/discord/callback`,
 );
 
 export const DiscordProvider: Provider = {

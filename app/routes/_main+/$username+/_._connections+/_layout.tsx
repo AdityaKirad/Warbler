@@ -10,23 +10,24 @@ export type CONNECTION_LAYOUT_LOADER = typeof loader;
 export const CONNECTION_LAYOUT_ROUTE_ID =
   "routes/_main+/$username+/_._connections+/_layout";
 
-export async function loader({ params }: Route.LoaderArgs) {
-  const user = await db.query.user.findFirst({
+export const loader = ({ params }: Route.LoaderArgs) =>
+  db.query.user.findFirst({
     columns: { name: true, username: true },
     where: (user, { eq }) => eq(user.username, params.username),
   });
-  return { user };
-}
 
-export default function Layout({ loaderData: { user } }: Route.ComponentProps) {
+export default function Layout({ loaderData }: Route.ComponentProps) {
   return (
     <div className="flex min-h-full justify-between">
       <div className="min-h-full w-150 border-x">
-        <PageTitle title={`${user?.name}`} description={`@${user?.username}`} />
+        <PageTitle
+          title={`${loaderData?.name}`}
+          description={`@${loaderData?.username}`}
+        />
         <div className="flex border-b">
           <FeedTab to="verified_followers" title="Verified Followers" />
           <FeedTab to="followers" title="Followers" />
-          <FeedTab to="following" title="Followers" />
+          <FeedTab to="following" title="Following" />
         </div>
         <Outlet />
       </div>

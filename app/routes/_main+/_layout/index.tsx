@@ -1,22 +1,6 @@
-import type { UserSelectType } from "~/.server/drizzle";
-import DefaultProfilePicture from "~/assets/default-profile-picture.png";
+import { getUsers } from "~/.server/utils";
 import Logo from "~/assets/logo-small.webp";
 import { DialogTweetForm } from "~/components/dialog-tweet-form";
-import {
-  BookmarkOutlinedIcon,
-  BookmarkSolidIcon,
-  HomeOutlinedIcon,
-  HomeSolidIcon,
-  MessageOutlinedIcon,
-  MessageSolidIcon,
-  NotificationOutlinedIcon,
-  NotificationSolidIcon,
-  SettingsOutlinedIcon,
-  SettingsSolidIcon,
-  UserOutlinedIcon,
-  UserSolidIcon,
-} from "~/components/icons";
-import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -24,105 +8,51 @@ import {
   dialogContentClassName,
   DialogTrigger,
 } from "~/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
 import { useUser } from "~/hooks/use-user";
-import { cn, getNameInitials } from "~/lib/utils";
 import {
   getNextOnboardingStep,
   hasStepsAfterCurrent,
   type OnboardingStep,
 } from "~/routes/_main+/onboarding/config";
-import { MoreHorizontalIcon, SearchIcon } from "lucide-react";
-import { memo, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { data, NavLink, Outlet } from "react-router";
 import { toast } from "sonner";
-import type { Route } from "./+types/_layout";
-import { DOB, ProfilePhoto, Username } from "./onboarding/forms";
-import { deletePostToastCookie } from "./tweet+/$tweetId+/delete";
-
-type NavItemProps = {
-  title: string;
-  to: string | ((username: string) => string);
-  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  ActiveIcon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  className?: string;
-};
-
-const links: NavItemProps[] = [
-  {
-    to: "/home",
-    title: "Home",
-    Icon: HomeOutlinedIcon,
-    ActiveIcon: HomeSolidIcon,
-  },
-  {
-    to: "/explore",
-    title: "Explore",
-    Icon: SearchIcon,
-    ActiveIcon: SearchIcon,
-  },
-  {
-    to: "/notifications",
-    title: "Notifications",
-    Icon: NotificationOutlinedIcon,
-    ActiveIcon: NotificationSolidIcon,
-  },
-  {
-    to: "/chat",
-    title: "Chat",
-    Icon: MessageOutlinedIcon,
-    ActiveIcon: MessageSolidIcon,
-  },
-  {
-    to: (username) => `/${username}`,
-    title: "Profile",
-    Icon: UserOutlinedIcon,
-    ActiveIcon: UserSolidIcon,
-    className: "max-[30rem]:hidden",
-  },
-  {
-    to: `/bookmarks`,
-    title: "Bookmarks",
-    Icon: BookmarkOutlinedIcon,
-    ActiveIcon: BookmarkSolidIcon,
-    className: "max-[30rem]:hidden",
-  },
-  {
-    to: "/settings",
-    title: "Settings",
-    Icon: SettingsOutlinedIcon,
-    ActiveIcon: SettingsSolidIcon,
-    className: "max-[30rem]:hidden",
-  },
-];
+import { DOB, ProfilePhoto, Username } from "../onboarding/forms";
+import { deletePostToastCookie } from "../tweet+/$tweetId+/delete";
+import type { Route } from "./+types";
+import { NavItem } from "./nav-item";
+import { links } from "./nav-links";
+import { UserDropdown } from "./user-dropdown";
 
 export async function loader({ request }: Route.LoaderArgs) {
+  const { sessions, headers } = await getUsers(request);
+
   const toastValue = await deletePostToastCookie.parse(
     request.headers.get("cookie"),
   );
+
   return data(
-    { toastValue },
+    { sessions, toastValue },
     {
-      headers: toastValue
-        ? {
-            "set-cookie": await deletePostToastCookie.serialize("", {
-              maxAge: -1,
-            }),
-          }
-        : {},
+      headers: {
+        ...Object.fromEntries(headers),
+        ...(toastValue
+          ? {
+              "set-cookie": await deletePostToastCookie.serialize("", {
+                maxAge: -1,
+              }),
+            }
+          : {}),
+      },
     },
   );
 }
 
 export default function Layout({ loaderData }: Route.ComponentProps) {
-  const user = useUser()?.user;
+  const user = useUser();
   const onboardingStep = getNextOnboardingStep(user?.onboardingStepsCompleted);
   const hasNextStep = hasStepsAfterCurrent(user?.onboardingStepsCompleted);
+
   useEffect(() => {
     if (!loaderData?.toastValue) {
       return;
@@ -167,7 +97,7 @@ export default function Layout({ loaderData }: Route.ComponentProps) {
             {user && (
               <>
                 <PostTweetDialog />
-                <UserDropdown user={user} />
+                <UserDropdown />
               </>
             )}
           </nav>
@@ -221,43 +151,6 @@ function OnboardingStep({
   }
 }
 
-function UserDropdown({ user }: { user: UserSelectType }) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          className="mt-auto h-auto rounded-full p-2 max-[30rem]:hidden"
-          variant="ghost">
-          <Avatar>
-            <AvatarImage
-              src={user.photo ?? DefaultProfilePicture}
-              alt={user.username}
-              loading="lazy"
-              decoding="async"
-            />
-            <AvatarFallback>{getNameInitials(user.name)}</AvatarFallback>
-          </Avatar>
-          <div className="text-left max-xl:hidden">
-            <p className="font-medium">{user.name}</p>
-            <p className="text-muted-foreground text-sm">@{user.username}</p>
-          </div>
-          <MoreHorizontalIcon className="ml-auto max-xl:hidden" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="px-0 py-2 xl:w-(--radix-dropdown-menu-trigger-width)">
-        <DropdownMenuItem className="text-base font-medium">
-          Add an existing account
-        </DropdownMenuItem>
-        <DropdownMenuItem className="text-base font-medium" asChild>
-          <a href="/flow/logout" aria-label="Log out">
-            Log out @{user.username}
-          </a>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
 function PostTweetDialog() {
   const [dialog, dialogSet] = useState(false);
   return (
@@ -286,36 +179,3 @@ function PostTweetDialog() {
     </Dialog>
   );
 }
-
-const NavItem = memo(function ({
-  title,
-  to,
-  Icon,
-  ActiveIcon,
-  className,
-}: Omit<NavItemProps, "to"> & { to: string }) {
-  return (
-    <NavLink
-      className={cn("group outline-none", className)}
-      to={to}
-      aria-label={title}>
-      {({ isActive }) => {
-        const IconComponent = isActive ? ActiveIcon : Icon;
-        return (
-          <div className="not-[:where(.group):focus-visible_*]:group-hover:bg-muted inline-flex items-center gap-4 rounded-full p-3 outline-2 outline-transparent transition-[colors,outline] group-focus-visible:outline-white">
-            <IconComponent />
-            <span
-              className={cn(
-                { "font-medium": isActive },
-                "text-xl max-xl:hidden",
-              )}>
-              {title}
-            </span>
-          </div>
-        );
-      }}
-    </NavLink>
-  );
-});
-
-NavItem.displayName = "NavItem";

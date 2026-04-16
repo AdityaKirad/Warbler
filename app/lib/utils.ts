@@ -14,8 +14,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const base64url = {
-  encode(payload: string) {
-    const bytes = new TextEncoder().encode(payload);
+  encode(payload: string | Buffer) {
+    const bytes =
+      typeof payload === "string" ? new TextEncoder().encode(payload) : payload;
 
     let base64 = "";
 

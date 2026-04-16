@@ -11,9 +11,9 @@ export function meta({ matches }: Route.MetaArgs) {
   const match = matches.find(
     (match) => match?.id === CONNECTION_LAYOUT_ROUTE_ID,
   );
-  const user = (
-    match?.loaderData as Awaited<ReturnType<CONNECTION_LAYOUT_LOADER>>
-  ).user;
+  const user = match?.loaderData as Awaited<
+    ReturnType<CONNECTION_LAYOUT_LOADER>
+  >;
   return [
     {
       title: `People following ${user?.name} (@${user?.username}) / Warbler`,
@@ -22,13 +22,17 @@ export function meta({ matches }: Route.MetaArgs) {
 }
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  const currentUser = await getUser(request);
+  const { session, clearSessionHeader } = await getUser(request);
 
-  if (!currentUser) {
-    throw redirect(params.username);
+  if (!session) {
+    throw redirect(params.username, {
+      headers: {
+        "set-cookie": clearSessionHeader,
+      },
+    });
   }
 
-  const followers = await db
+  return db
     .select({
       id: user.id,
       name: user.name,
@@ -39,12 +43,12 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 
       following: sql<boolean | null>`
         CASE 
-        WHEN ${user.id} != ${currentUser.user.id} 
+        WHEN ${user.id} != ${session.user.id} 
         THEN EXISTS(
           SELECT 1 
           FROM ${userFollow} 
           WHERE ${userFollow.followingId} = ${user.id} 
-          AND ${userFollow.followerId} = ${currentUser.user.id}
+          AND ${userFollow.followerId} = ${session.user.id}
         ) 
         ELSE NULL END
       `,
@@ -60,12 +64,8 @@ export async function loader({ params, request }: Route.LoaderArgs) {
           .where(eq(user.username, params.username)),
       ),
     );
-
-  return { followers };
 }
 
-export default function Page({
-  loaderData: { followers },
-}: Route.ComponentProps) {
-  return <ConnectionList connections={followers} />;
+export default function Page({ loaderData }: Route.ComponentProps) {
+  return <ConnectionList connections={loaderData} />;
 }

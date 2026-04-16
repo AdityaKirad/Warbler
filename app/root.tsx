@@ -1,4 +1,5 @@
 import {
+  data,
   isRouteErrorResponse,
   Links,
   Meta,
@@ -8,20 +9,30 @@ import {
   useRouteError,
 } from "react-router";
 import "./tailwind.css";
-import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "./.server/honeypot";
 import { getUser } from "./.server/utils";
 import type { Route } from "./+types/root";
 import { Toaster } from "./components/ui/sonner";
+import { LoginDialog } from "./routes/flow+/login";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const user = await getUser(request);
-  const honeypotProps = await honeypot.getInputProps();
-  return {
-    user,
-    honeypotProps,
-  };
+  const { session, clearSessionHeader } = await getUser(request);
+
+  return data(
+    {
+      user: session?.user,
+      honeypotProps: await honeypot.getInputProps(),
+      partykitUrl: process.env.PARTYKIT_URL,
+    },
+    {
+      headers: clearSessionHeader
+        ? {
+            "set-cookie": clearSessionHeader,
+          }
+        : {},
+    },
+  );
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -61,9 +72,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App({ loaderData }: Route.ComponentProps) {
   return (
     <HoneypotProvider {...loaderData.honeypotProps}>
-      <NuqsAdapter>
-        <Outlet context={loaderData.user} />
-      </NuqsAdapter>
+      <Outlet />
+      <LoginDialog />
     </HoneypotProvider>
   );
 }

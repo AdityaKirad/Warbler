@@ -9,14 +9,12 @@ import { useOptimisticTweet } from "./+use-optimistic-tweet";
 export const meta = () => [{ title: "Following / Warbler" }];
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const {
-    user: { id: currentUserId },
-  } = await requireUser(request);
+  const { user } = await requireUser(request);
 
   const url = new URL(request.url);
   const cursor = url.searchParams.get("cursor");
 
-  const tweets = await getFollowingFeed({ cursor, userId: currentUserId });
+  const tweets = await getFollowingFeed({ cursor, userId: user.id });
 
   return {
     tweets,
@@ -34,7 +32,10 @@ export default function Page({ loaderData }: Route.ComponentProps) {
   const optimisticTweet = useOptimisticTweet();
 
   const displayedTweets = optimisticTweet
-    ? [optimisticTweet, ...tweets.filter((tweet) => tweet.id !== optimisticTweet.id)]
+    ? [
+        optimisticTweet,
+        ...tweets.filter((tweet) => tweet.id !== optimisticTweet.id),
+      ]
     : tweets;
 
   return (

@@ -1,7 +1,7 @@
 import type { UserSelectType } from "~/.server/drizzle";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { getNameInitials } from "~/lib/utils";
-import type { LayoutLoader } from "~/routes/_main+/$username+/_layout";
+import type { UsernameLayoutLoader } from "~/routes/_main+/$username+/_layout";
 import { BadgeCheckIcon } from "lucide-react";
 import { Link, useFetcher } from "react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -12,7 +12,7 @@ import {
 } from "../ui/hover-card";
 
 function useProfileHoverCardLoader(username: string) {
-  const fetcher = useFetcher<LayoutLoader>({
+  const fetcher = useFetcher<UsernameLayoutLoader>({
     key: `profile:${username}`,
   });
 

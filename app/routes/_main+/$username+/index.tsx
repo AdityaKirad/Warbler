@@ -2,6 +2,7 @@ import { getUser } from "~/.server/utils";
 import { Spinner } from "~/components/spinner";
 import { TweetCard } from "~/components/tweet-card";
 import { useInfiniteTweetsScroll } from "~/hooks/use-infinite-tweets-scroll";
+import { data } from "react-router";
 import { getUserPosts, PAGE_SIZE } from "../feed-queries.server";
 import { USERNAME_LAYOUT_ROUTE_ID, type UsernameLayoutLoader } from "./_layout";
 import type { Route } from "./+types";
@@ -10,7 +11,7 @@ export function meta({ matches }: Route.MetaArgs) {
   const match = matches.find((match) => match?.id === USERNAME_LAYOUT_ROUTE_ID);
   const loaderData = match?.loaderData as Awaited<
     ReturnType<UsernameLayoutLoader>
-  >;
+  >["data"];
   return [
     {
       title: loaderData
@@ -21,25 +22,28 @@ export function meta({ matches }: Route.MetaArgs) {
 }
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  const currentUser = await getUser(request);
+  const { session, clearSessionHeader } = await getUser(request);
 
   const url = new URL(request.url);
   const cursor = url.searchParams.get("cursor");
 
   const tweets = await getUserPosts({
     cursor,
-    userId: currentUser?.user.id,
+    userId: session?.user.id,
     username: params.username,
   });
 
-  return {
-    tweets,
-    hasMore: tweets.length === PAGE_SIZE,
-    nextCursor:
-      tweets.length > 0
-        ? tweets[tweets.length - 1]?.createdAt.toISOString()
-        : null,
-  };
+  return data(
+    {
+      tweets,
+      hasMore: tweets.length === PAGE_SIZE,
+      nextCursor:
+        tweets.length > 0
+          ? tweets[tweets.length - 1]?.createdAt.toISOString()
+          : null,
+    },
+    { headers: clearSessionHeader ? { "set-cookie": clearSessionHeader } : {} },
+  );
 }
 
 export default function Page({ loaderData }: Route.ComponentProps) {

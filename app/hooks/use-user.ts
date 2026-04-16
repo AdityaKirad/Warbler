@@ -7,6 +7,7 @@ export function useUser() {
 
 export function useRequiredUser() {
   const user = useUser();
+
   if (!user) {
     throw new Error("User is not logged in");
   }

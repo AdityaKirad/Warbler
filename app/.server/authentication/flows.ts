@@ -1,9 +1,21 @@
-import type { UserInsertType } from "../drizzle";
+import type { Cookie } from "react-router";
+import { createCookie } from "react-router";
+import { isMultiSessionCookie, sessionCookieOptions } from "../cookies/session";
+import type {
+  SessionSelectType,
+  UserInsertType,
+  UserSelectType,
+} from "../drizzle";
 import { account, db, user } from "../drizzle";
-import { createSession, generateUsernameSuggestions } from "../utils";
+import {
+  createSession,
+  generateUsernameSuggestions,
+  MAX_SESSIONS,
+} from "../utils";
+import { parseCookies } from "../utils/parse-cookies";
 import { getPasswordHash, verifyPassword } from "./password";
 
-export const credentialProviderKey = "credential";
+export const CREDENTIAL_PROVIDER_KEY = "credential";
 
 export async function resolveLoginMethod(identifier: string) {
   const user = await db.query.user.findFirst({
@@ -21,7 +33,7 @@ export async function resolveLoginMethod(identifier: string) {
   return {
     identifier,
     type,
-    method: credentialProviderKey,
+    method: CREDENTIAL_PROVIDER_KEY,
   };
 }
 
@@ -34,25 +46,35 @@ export async function login(
     identifier: string;
     password: string;
   },
-) {
-  const user = await db.query.user.findFirst({
+): Promise<
+  | { headers: HeadersInit; sessionCapReached: true }
+  | {
+      headers: HeadersInit;
+      session: SessionSelectType;
+      user: UserSelectType;
+      sessionCapReached?: never;
+    }
+  | null
+> {
+  const dbUser = await db.query.user.findFirst({
     with: { accounts: true },
     where: (user, { eq, or }) =>
       or(eq(user.email, identifier), eq(user.username, identifier)),
   });
 
-  if (!user) {
+  if (!dbUser) {
     await getPasswordHash(password);
     return null;
   }
 
-  const { accounts, ...userData } = user;
+  const { accounts, ...user } = dbUser;
 
   const account = accounts.find(
-    (account) => account.provider === credentialProviderKey,
+    (account) => account.provider === CREDENTIAL_PROVIDER_KEY,
   );
 
   if (!account?.password) {
+    await getPasswordHash(password);
     return null;
   }
 
@@ -62,13 +84,80 @@ export async function login(
     return null;
   }
 
+  const cookie = request.headers.get("cookie");
+
+  const cookies = parseCookies(cookie ?? "");
+
+  const headers = new Headers();
+
+  const parsedCookies = (
+    await Promise.all(
+      Array.from(cookies.keys())
+        .filter(isMultiSessionCookie)
+        .map(async (key) => {
+          const multiSessionCookie = createCookie(key, sessionCookieOptions);
+          const token = await multiSessionCookie.parse(cookie);
+          if (!token) {
+            headers.append(
+              "set-cookie",
+              await multiSessionCookie.serialize(null, { maxAge: -1 }),
+            );
+            return null;
+          }
+          return { token, cookie: multiSessionCookie };
+        }),
+    )
+  ).filter(Boolean) as { cookie: Cookie; token: string }[];
+
+  if (!parseCookies.length) {
+    const [session] = await createSession(request, db, user.id);
+
+    if (!session) {
+      throw new Error("Failed to create session");
+    }
+
+    return { headers, session, user };
+  }
+
+  const sessions = await db.query.session.findMany({
+    where: (session, { and, inArray, gt }) =>
+      and(
+        inArray(
+          session.token,
+          parsedCookies.map(({ token }) => token),
+        ),
+        gt(session.expiresAt, new Date()),
+      ),
+  });
+
+  const sessionsTokenSet = new Set(sessions.map((session) => session.token));
+  const staleCookies = parsedCookies.filter(
+    ({ token }) => !sessionsTokenSet.has(token),
+  );
+
+  for (const { cookie } of staleCookies) {
+    headers.append("set-cookie", await cookie.serialize(null, { maxAge: -1 }));
+  }
+
+  const existingSession = sessions.find(
+    (session) => session.userId === user.id,
+  );
+
+  if (existingSession) {
+    return { headers, user, session: existingSession };
+  }
+
+  if (sessions.length >= MAX_SESSIONS) {
+    return { headers, sessionCapReached: true };
+  }
+
   const [session] = await createSession(request, db, user.id);
 
   if (!session) {
     throw new Error("Failed to create session");
   }
 
-  return { user: userData, session };
+  return { headers, session, user };
 }
 
 export function signup(
@@ -91,7 +180,7 @@ export function signup(
       .insert(user)
       .values({
         username: username!,
-        onboardingStepsCompleted: ['dob', 'verify-email'],
+        onboardingStepsCompleted: ["dob", "verify-email"],
         ...userInfo,
       })
       .returning();
@@ -102,7 +191,7 @@ export function signup(
 
     await tx.insert(account).values({
       userId: createdUser.id,
-      provider: credentialProviderKey,
+      provider: CREDENTIAL_PROVIDER_KEY,
       providerId: createdUser.id,
       password: await getPasswordHash(password),
     });
@@ -131,7 +220,7 @@ export async function resetPassword({
     .values({
       userId,
       password,
-      provider: credentialProviderKey,
+      provider: CREDENTIAL_PROVIDER_KEY,
       providerId: userId,
     })
     .onConflictDoUpdate({

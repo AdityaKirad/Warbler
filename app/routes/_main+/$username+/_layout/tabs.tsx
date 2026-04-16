@@ -1,11 +1,11 @@
 import { FeedTab } from "~/components/feed-tab";
 import { useUser } from "~/hooks/use-user";
-import type { LayoutLoader } from "./index";
+import type { UsernameLayoutLoader } from ".";
 
 export function Tabs({
   user,
 }: {
-  user: NonNullable<Awaited<ReturnType<LayoutLoader>>>;
+  user: NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>["data"]>;
 }) {
   const currentUser = useUser();
   return (
@@ -21,7 +21,7 @@ export function Tabs({
         label={`${user.name} Replies`}
       />
       <FeedTab to="media" title="Media" label={`${user?.name} Media`} />
-      {user.id === currentUser?.user.id && (
+      {user.id === currentUser?.id && (
         <FeedTab to="likes" title="Likes" label={`${user?.name} Likes`} />
       )}
     </div>

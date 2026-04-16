@@ -1,6 +1,7 @@
 import { parseWithZod } from "@conform-to/zod";
 import { login, resolveLoginMethod } from "~/.server/authentication";
 import { IdentifierSchema } from "~/lib/user-validation";
+import { redirect } from "react-router";
 import { z } from "zod";
 import { createCredentialLoginSchema } from ".";
 import { handleNewSession } from "./login.server";
@@ -75,10 +76,16 @@ export async function handleLogin(request: Request, formData: FormData) {
 
   const { session } = submission.value;
 
+  if (session.sessionCapReached) {
+    throw redirect("/home", {
+      headers: session.headers,
+    });
+  }
+
   const url = new URL(request.url);
 
   return handleNewSession({
-    redirectTo: url.searchParams.get("redirectTo"),
     ...session,
+    redirectTo: url.searchParams.get("redirectTo"),
   });
 }

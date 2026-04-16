@@ -9,7 +9,13 @@ export async function action({ request, params }: Route.ActionArgs) {
     user: { id: userId },
   } = await requireUser(request);
 
-  const followingId = sql<string>`(SELECT ${user.id} FROM ${user} WHERE ${user.username} = ${params.username})`;
+  const followingId = sql<string>`
+    (
+      SELECT ${user.id} 
+      FROM ${user} 
+      WHERE ${user.username} = ${params.username}
+    )
+  `;
 
   await db.transaction(async (tx) => {
     const result = await tx

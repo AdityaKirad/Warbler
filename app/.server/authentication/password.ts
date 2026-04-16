@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import { createToken } from "./utils";
 
 const SCRYPT_PARAMS = {
   N: 2 ** 14,
@@ -49,7 +48,9 @@ export async function checkCommonPassword(password: string) {
 }
 
 export async function getPasswordHash(password: string) {
-  const salt = createToken(SCRYPT_PARAMS.saltLength).toString("base64url");
+  const salt = crypto
+    .randomBytes(SCRYPT_PARAMS.saltLength)
+    .toString("base64url");
   const key = await generateKey({ password, salt }, SCRYPT_PARAMS);
   return [
     "scrypt",
