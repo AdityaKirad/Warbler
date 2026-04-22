@@ -2,6 +2,7 @@ import { getUser } from "~/.server/utils";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { Button } from "~/components/ui/button";
 import { useOutsideClick } from "~/hooks/use-outside-click";
+import { cld } from "~/lib/utils";
 import { XIcon } from "lucide-react";
 import { useNavigate } from "react-router";
 import type { Route } from "./+types/photo";
@@ -27,7 +28,6 @@ export const meta = ({ loaderData: user }: Route.MetaArgs) => [
 
 export default function Page({ loaderData: user }: Route.ComponentProps) {
   const navigate = useNavigate();
-
   const ref = useOutsideClick<HTMLDivElement>(() => navigate(-1));
 
   return (
@@ -39,6 +39,7 @@ export default function Page({ loaderData: user }: Route.ComponentProps) {
           className="absolute top-2 left-2 rounded-full"
           variant="ghost"
           size="icon"
+          type="button"
           aria-label="Close"
           onClick={() => navigate(-1)}>
           <XIcon />
@@ -48,7 +49,14 @@ export default function Page({ loaderData: user }: Route.ComponentProps) {
           className="rounded-full"
           loading="lazy"
           decoding="async"
-          src={user.photo ?? DefaultProfilePicture}
+          src={
+            user.photo
+              ? cld
+                  .image(user.photo.public_id)
+                  .setVersion(user.photo.version)
+                  .toURL()
+              : DefaultProfilePicture
+          }
           alt={`@${user.username}`}
           width={400}
           height={400}

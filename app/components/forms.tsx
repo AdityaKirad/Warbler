@@ -22,6 +22,7 @@ import {
 import { Label } from "./ui/label";
 import { PasswordInput } from "./ui/password-input";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Textarea } from "./ui/textarea";
 
 type ErrorListType = Array<string | null | undefined> | null | undefined;
 
@@ -166,6 +167,7 @@ export function DateField({
                     "text-muted-foreground": !controlValue,
                   })}
                   ref={triggerRef}
+                  type="button"
                   variant="outline">
                   <span>
                     {controlValue
@@ -190,6 +192,32 @@ export function DateField({
         )}
       </ClientOnly>
       <ErrorList errors={field.errors} />
+    </div>
+  );
+}
+
+export function TextAreaField({
+  textAreaProps,
+  labelProps,
+  errors,
+}: {
+  textAreaProps: React.TextareaHTMLAttributes<HTMLTextAreaElement>;
+  errors?: ErrorListType;
+  labelProps?: React.LabelHTMLAttributes<HTMLLabelElement>;
+}) {
+  const fallbackId = useId();
+  const id = textAreaProps.id ?? fallbackId;
+  const errorId = errors?.length ? `${id}-error` : undefined;
+  return (
+    <div className="space-y-1">
+      {labelProps && <Label htmlFor={textAreaProps.id} {...labelProps} />}
+      <Textarea
+        aria-describedby={errorId}
+        aria-invalid={errorId ? true : undefined}
+        id={textAreaProps.id}
+        {...textAreaProps}
+      />
+      <ErrorList errors={errors} id={errorId} />
     </div>
   );
 }

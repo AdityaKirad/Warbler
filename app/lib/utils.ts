@@ -1,3 +1,4 @@
+import { Cloudinary } from "@cloudinary/url-gen";
 import type { ClassValue } from "clsx";
 import { clsx } from "clsx";
 import {
@@ -8,6 +9,31 @@ import {
   format,
 } from "date-fns";
 import { twMerge } from "tailwind-merge";
+
+export const ALLOWED_FORMATS = {
+  pjp: "image/jpeg",
+  jfif: "image/jpeg",
+  jpe: "image/jpeg",
+  pjpeg: "image/jpeg",
+  jpeg: "image/jpeg",
+  jpg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  mp4: "video/mp4",
+  mov: "video/quicktime",
+  m4v: "video/x-m4v",
+  webm: "video/webm",
+};
+
+export const cld = new Cloudinary({
+  cloud: {
+    cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
+  },
+  url: {
+    secure: true,
+    analytics: false,
+  },
+});
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -143,4 +169,65 @@ function truncate(value: number, decimals: number) {
   return (Math.floor(value * factor) / factor)
     .toFixed(decimals)
     .replace(/\.0$/, "");
+}
+
+export async function uploadToCloudinary(
+  file: File,
+  type: "header" | "post" | "profile",
+) {
+  const res = await fetch("/cloudinary/sign", {
+    method: "POST",
+    body: JSON.stringify({
+      type,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Something went wrong while signing the request");
+  }
+
+  const {
+    allowed_formats,
+    api_key,
+    cloudname,
+    folder,
+    overwrite,
+    public_id,
+    signature,
+    transformation,
+    timestamp,
+  } = await res.json();
+
+  const formData = new FormData();
+
+  formData.append("file", file);
+  formData.append("folder", folder);
+  formData.append("api_key", api_key);
+  formData.append("timestamp", timestamp);
+  formData.append("signature", signature);
+  formData.append("allowed_formats", allowed_formats);
+  formData.append("transformation", transformation);
+  formData.append("public_id", public_id);
+
+  if (overwrite) {
+    formData.append("overwrite", String(overwrite));
+  }
+
+  const uploadRes = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudname}/auto/upload`,
+    {
+      method: "POST",
+      body: formData,
+    },
+  );
+
+  const data = await uploadRes.json();
+
+  if (!uploadRes.ok) {
+    throw new Error(
+      data.error.message || "Something went wrong while uploading the image",
+    );
+  }
+
+  return { public_id: data.public_id, version: data.version };
 }

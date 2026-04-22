@@ -1,6 +1,6 @@
 import type { UserSelectType } from "~/.server/drizzle";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
-import { getNameInitials } from "~/lib/utils";
+import { cld, getNameInitials } from "~/lib/utils";
 import type { UsernameLayoutLoader } from "~/routes/_main+/$username+/_layout";
 import { BadgeCheckIcon } from "lucide-react";
 import { Link, useFetcher } from "react-router";
@@ -50,7 +50,14 @@ export function TweetUserAvatar({
             to={`/${user.username}`}
             className="transition-opacity hover:opacity-80">
             <AvatarImage
-              src={user.photo ?? DefaultProfilePicture}
+              src={
+                user.photo
+                  ? cld
+                      .image(user.photo.public_id)
+                      .setVersion(user.photo.version)
+                      .toURL()
+                  : DefaultProfilePicture
+              }
               alt={user.username}
               loading="lazy"
               decoding="async"
@@ -102,7 +109,14 @@ function ProfileHoverCard({
       <div className="flex justify-between">
         <Avatar className="size-20">
           <AvatarImage
-            src={data?.photo ?? DefaultProfilePicture}
+            src={
+              data?.photo
+                ? cld
+                    .image(data.photo.public_id)
+                    .setVersion(data.photo.version)
+                    .toURL()
+                : DefaultProfilePicture
+            }
             alt={`@${data?.username}`}
             loading="lazy"
             decoding="async"

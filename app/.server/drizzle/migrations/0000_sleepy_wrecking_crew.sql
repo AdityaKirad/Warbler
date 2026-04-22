@@ -4,8 +4,8 @@ CREATE TABLE `account` (
 	`provider` text NOT NULL,
 	`provider_id` text NOT NULL,
 	`password` text,
-	`created_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-	`updated_at` integer NOT NULL,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
@@ -18,8 +18,8 @@ CREATE TABLE `session` (
 	`user_agent` text,
 	`ip_address` text,
 	`location` text,
-	`created_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-	`updated_at` integer NOT NULL,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	`expires_at` integer NOT NULL,
 	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE cascade ON DELETE cascade
 );
@@ -34,7 +34,7 @@ CREATE TABLE `tweet` (
 	`reply_to_tweet_id` text,
 	`quoted_tweet_id` text,
 	`views` integer DEFAULT 0 NOT NULL,
-	`created_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE cascade ON DELETE cascade,
 	FOREIGN KEY (`reply_to_tweet_id`) REFERENCES `tweet`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`quoted_tweet_id`) REFERENCES `tweet`(`id`) ON UPDATE no action ON DELETE no action
@@ -47,7 +47,7 @@ CREATE TABLE `tweet_interaction` (
 	`tweet_id` text NOT NULL,
 	`user_id` text NOT NULL,
 	`type` text NOT NULL,
-	`created_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	PRIMARY KEY(`tweet_id`, `user_id`, `type`),
 	FOREIGN KEY (`tweet_id`) REFERENCES `tweet`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
@@ -70,8 +70,8 @@ CREATE TABLE `user` (
 	`website` text,
 	`profile_verified` integer DEFAULT false NOT NULL,
 	`onboarding_steps_completed` text DEFAULT '[]' NOT NULL,
-	`created_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-	`updated_at` integer NOT NULL
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `user_username_unique` ON `user` (`username`);--> statement-breakpoint
@@ -79,7 +79,7 @@ CREATE UNIQUE INDEX `user_email_unique` ON `user` (`email`);--> statement-breakp
 CREATE TABLE `user_follow` (
 	`follower_id` text NOT NULL,
 	`following_id` text NOT NULL,
-	`created_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	PRIMARY KEY(`follower_id`, `following_id`),
 	FOREIGN KEY (`follower_id`) REFERENCES `user`(`id`) ON UPDATE cascade ON DELETE cascade,
 	FOREIGN KEY (`following_id`) REFERENCES `user`(`id`) ON UPDATE cascade ON DELETE cascade
@@ -90,8 +90,8 @@ CREATE TABLE `verification` (
 	`id` text PRIMARY KEY NOT NULL,
 	`identifier` text NOT NULL,
 	`value` text NOT NULL,
-	`created_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-	`updated_at` integer NOT NULL,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	`expires_at` integer NOT NULL
 );
 --> statement-breakpoint

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f22f8425-199b-4bc1-9f94-7e22f090694a",
+  "id": "24823338-04a9-4e45-b444-e666a595e214",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account": {
@@ -48,30 +48,26 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(CURRENT_TIMESTAMP)"
+          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
         },
         "updated_at": {
           "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
         }
       },
       "indexes": {
         "account_user_id_idx": {
           "name": "account_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         },
         "account_provider_provider_id_unique_idx": {
           "name": "account_provider_provider_id_unique_idx",
-          "columns": [
-            "provider",
-            "provider_id"
-          ],
+          "columns": ["provider", "provider_id"],
           "isUnique": true
         }
       },
@@ -80,12 +76,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -145,14 +137,15 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(CURRENT_TIMESTAMP)"
+          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
         },
         "updated_at": {
           "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
         },
         "expires_at": {
           "name": "expires_at",
@@ -165,16 +158,12 @@
       "indexes": {
         "session_token_unique": {
           "name": "session_token_unique",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         },
         "session_user_id_idx": {
           "name": "session_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -183,12 +172,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -256,31 +241,23 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(CURRENT_TIMESTAMP)"
+          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
         }
       },
       "indexes": {
         "tweet_user_timeline_idx": {
           "name": "tweet_user_timeline_idx",
-          "columns": [
-            "user_id",
-            "created_at"
-          ],
+          "columns": ["user_id", "created_at"],
           "isUnique": false
         },
         "tweet_reply_sort_idx": {
           "name": "tweet_reply_sort_idx",
-          "columns": [
-            "reply_to_tweet_id",
-            "created_at"
-          ],
+          "columns": ["reply_to_tweet_id", "created_at"],
           "isUnique": false
         },
         "tweet_quoted_tweet_id_idx": {
           "name": "tweet_quoted_tweet_id_idx",
-          "columns": [
-            "quoted_tweet_id"
-          ],
+          "columns": ["quoted_tweet_id"],
           "isUnique": false
         }
       },
@@ -289,12 +266,8 @@
           "name": "tweet_user_id_user_id_fk",
           "tableFrom": "tweet",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -302,12 +275,8 @@
           "name": "tweet_reply_to_tweet_id_tweet_id_fk",
           "tableFrom": "tweet",
           "tableTo": "tweet",
-          "columnsFrom": [
-            "reply_to_tweet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["reply_to_tweet_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -315,12 +284,8 @@
           "name": "tweet_quoted_tweet_id_tweet_id_fk",
           "tableFrom": "tweet",
           "tableTo": "tweet",
-          "columnsFrom": [
-            "quoted_tweet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["quoted_tweet_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -359,25 +324,18 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(CURRENT_TIMESTAMP)"
+          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
         }
       },
       "indexes": {
         "tweet_interaction_user_type_created_idx": {
           "name": "tweet_interaction_user_type_created_idx",
-          "columns": [
-            "user_id",
-            "type",
-            "created_at"
-          ],
+          "columns": ["user_id", "type", "created_at"],
           "isUnique": false
         },
         "tweet_interaction_tweet_type_idx": {
           "name": "tweet_interaction_tweet_type_idx",
-          "columns": [
-            "tweet_id",
-            "type"
-          ],
+          "columns": ["tweet_id", "type"],
           "isUnique": false
         }
       },
@@ -386,12 +344,8 @@
           "name": "tweet_interaction_tweet_id_tweet_id_fk",
           "tableFrom": "tweet_interaction",
           "tableTo": "tweet",
-          "columnsFrom": [
-            "tweet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tweet_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -399,23 +353,15 @@
           "name": "tweet_interaction_user_id_user_id_fk",
           "tableFrom": "tweet_interaction",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "tweet_interaction_pk": {
-          "columns": [
-            "tweet_id",
-            "user_id",
-            "type"
-          ],
+          "columns": ["tweet_id", "user_id", "type"],
           "name": "tweet_interaction_pk"
         }
       },
@@ -532,37 +478,27 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(CURRENT_TIMESTAMP)"
+          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
         },
         "updated_at": {
           "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
         }
       },
       "indexes": {
         "user_username_unique": {
           "name": "user_username_unique",
-          "columns": [
-            "username"
-          ],
+          "columns": ["username"],
           "isUnique": true
         },
         "user_email_unique": {
           "name": "user_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
-        },
-        "user_name_idx": {
-          "name": "user_name_idx",
-          "columns": [
-            "name"
-          ],
-          "isUnique": false
         }
       },
       "foreignKeys": {},
@@ -593,15 +529,13 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(CURRENT_TIMESTAMP)"
+          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
         }
       },
       "indexes": {
         "user_follow_following_id_idx": {
           "name": "user_follow_following_id_idx",
-          "columns": [
-            "following_id"
-          ],
+          "columns": ["following_id"],
           "isUnique": false
         }
       },
@@ -610,12 +544,8 @@
           "name": "user_follow_follower_id_user_id_fk",
           "tableFrom": "user_follow",
           "tableTo": "user",
-          "columnsFrom": [
-            "follower_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["follower_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -623,22 +553,15 @@
           "name": "user_follow_following_id_user_id_fk",
           "tableFrom": "user_follow",
           "tableTo": "user",
-          "columnsFrom": [
-            "following_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["following_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {
         "follows_follower_id_following_id_primary_key": {
-          "columns": [
-            "follower_id",
-            "following_id"
-          ],
+          "columns": ["follower_id", "following_id"],
           "name": "follows_follower_id_following_id_primary_key"
         }
       },
@@ -675,14 +598,15 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(CURRENT_TIMESTAMP)"
+          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
         },
         "updated_at": {
           "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
         },
         "expires_at": {
           "name": "expires_at",
@@ -695,9 +619,7 @@
       "indexes": {
         "verification_identifier_unique": {
           "name": "verification_identifier_unique",
-          "columns": [
-            "identifier"
-          ],
+          "columns": ["identifier"],
           "isUnique": true
         }
       },

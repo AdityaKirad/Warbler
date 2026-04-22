@@ -3,7 +3,7 @@ import type {
   SuggestionProps,
 } from "@tiptap/suggestion";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
-import { getNameInitials } from "~/lib/utils";
+import { cld, getNameInitials } from "~/lib/utils";
 import {
   forwardRef,
   useCallback,
@@ -117,10 +117,18 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
               className="data-highlighted:bg-muted flex items-center gap-2 px-4 py-2"
               key={item.id}
               data-highlighted={index === selectedIndex ? true : undefined}
+              type="button"
               onClick={() => selectItem(index)}>
               <Avatar>
                 <AvatarImage
-                  src={item.photo ?? DefaultProfilePicture}
+                  src={
+                    item.photo
+                      ? cld
+                          .image(item.photo.public_id)
+                          .setVersion(item.photo.version)
+                          .toURL()
+                      : DefaultProfilePicture
+                  }
                   alt={`@${item.username}`}
                   loading="lazy"
                   decoding="async"

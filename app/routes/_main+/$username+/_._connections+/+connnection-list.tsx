@@ -2,7 +2,7 @@ import type { UserSelectType } from "~/.server/drizzle";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
-import { getNameInitials } from "~/lib/utils";
+import { cld, getNameInitials } from "~/lib/utils";
 import { Form, Link } from "react-router";
 
 type ConnectionCardProps = Pick<
@@ -26,34 +26,41 @@ export function ConnectionList({
   );
 }
 
-function ConnectionCard(connnection: ConnectionCardProps) {
+function ConnectionCard(connection: ConnectionCardProps) {
   return (
     <Form
       className="hover:bg-accent/20 relative flex gap-2 px-4 py-2 transition-colors"
       method="POST"
-      action={`/${connnection.username}/follow`}
+      action={`/${connection.username}/follow`}
       navigate={false}>
       <Link
-        to={`/${connnection.username}`}
+        to={`/${connection.username}`}
         className="focus-visible:bg-accent/20 absolute inset-0 focus-visible:outline-2 focus-visible:outline-blue-300"
       />
       <Avatar>
         <AvatarImage
-          src={connnection.photo ?? DefaultProfilePicture}
-          alt={`@${connnection.username}`}
+          src={
+            connection.photo
+              ? cld
+                  .image(connection.photo.public_id)
+                  .setVersion(connection.photo.version)
+                  .toURL()
+              : DefaultProfilePicture
+          }
+          alt={`@${connection.username}`}
           loading="lazy"
           decoding="async"
         />
-        <AvatarFallback>{getNameInitials(connnection.name)}</AvatarFallback>
+        <AvatarFallback>{getNameInitials(connection.name)}</AvatarFallback>
       </Avatar>
       <div>
-        <p className="font-medium">{connnection.name}</p>
-        <p className="text-muted-foreground text-sm">@{connnection.username}</p>
-        <p>{connnection.bio}</p>
+        <p className="font-medium">{connection.name}</p>
+        <p className="text-muted-foreground text-sm">@{connection.username}</p>
+        <p>{connection.bio}</p>
       </div>
-      {connnection.following !== null && (
+      {connection.following !== null && (
         <Button className="z-10 ml-auto rounded-full" type="submit">
-          {connnection.following ? "Unfollow" : "Follow"}
+          {connection.following ? "Unfollow" : "Follow"}
         </Button>
       )}
     </Form>

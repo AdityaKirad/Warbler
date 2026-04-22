@@ -40,6 +40,7 @@ export function ProfileActions({
             <DropdownMenuTrigger asChild>
               <Button
                 className="rounded-full"
+                type="button"
                 variant="outline"
                 size="icon"
                 aria-label="More">
@@ -61,6 +62,7 @@ export function ProfileActions({
                 className="flex items-center gap-2 text-base font-medium"
                 asChild>
                 <button
+                  type="button"
                   onClick={async () => {
                     if (navigator.share) {
                       try {
@@ -82,6 +84,7 @@ export function ProfileActions({
                 className="flex w-full items-center gap-2 text-base font-medium"
                 asChild>
                 <button
+                  type="button"
                   onClick={() =>
                     navigator.clipboard.writeText(
                       `${process.env.APP_URL}/${user.username}`,
@@ -110,7 +113,9 @@ export function ProfileActions({
       ) : (
         <Dialog>
           <DialogTrigger asChild>
-            <Button className="rounded-full">Follow</Button>
+            <Button className="rounded-full" type="button">
+              Follow
+            </Button>
           </DialogTrigger>
           <DialogContent className="justify-center py-20 max-sm:px-8 sm:h-fit">
             <UserPlusIcon className="mx-auto size-12 text-blue-500" />

@@ -14,10 +14,11 @@ import {
 const timestamps = {
   createdAt: integer({ mode: "timestamp_ms" })
     .notNull()
-    .default(sql`(CURRENT_TIMESTAMP)`),
+    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
   updatedAt: integer({ mode: "timestamp_ms" })
-    .notNull()
-    .$defaultFn(() => new Date()),
+    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+    .$onUpdateFn(() => new Date())
+    .notNull(),
   expiresAt: integer({ mode: "timestamp_ms" }).notNull(),
 };
 
@@ -32,8 +33,11 @@ export const user = sqliteTable("user", {
   emailVerified: integer({ mode: "boolean" }).notNull(),
   displayVerifiedEmail: integer({ mode: "boolean" }).notNull().default(false),
   dob: integer({ mode: "timestamp_ms" }),
-  photo: text(),
-  coverImage: text(),
+  photo: text({ mode: "json" }).$type<{ public_id: string; version: number }>(),
+  coverImage: text({ mode: "json" }).$type<{
+    public_id: string;
+    version: number;
+  }>(),
   location: text(),
   bio: text(),
   website: text(),
@@ -64,7 +68,7 @@ export const account = sqliteTable(
   },
   (table) => [
     index("account_user_id_idx").on(table.userId),
-    uniqueIndex("account_provider_provider_id_unique").on(
+    uniqueIndex("account_provider_provider_id_unique_idx").on(
       table.provider,
       table.providerId,
     ),

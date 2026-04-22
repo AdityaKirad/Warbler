@@ -155,7 +155,9 @@ async function loginOrSignupUser(
     providerId: string;
     headers: HeadersInit;
     redirectTo: string | null;
-  } & Pick<UserSelectType, "name" | "email" | "emailVerified" | "photo">,
+  } & Pick<UserSelectType, "name" | "email" | "emailVerified"> & {
+      photo: string | null;
+    },
 ) {
   const oauthUser = await findOAuthUser({
     email,
@@ -287,14 +289,13 @@ async function handleOauthSignup(
     userInfo,
   }: {
     accountInfo: Pick<AccountInsertType, "provider" | "providerId">;
-    userInfo: Pick<
-      UserInsertType,
-      "email" | "emailVerified" | "photo" | "name"
-    >;
+    userInfo: Pick<UserInsertType, "email" | "emailVerified" | "name"> & {
+      photo: string | null;
+    };
   },
 ) {
   const onboardingStepsCompleted: string[] = [];
-  let photo: string;
+  let photo: { public_id: string; version: number } | null = null;
   if (userInfo.photo) {
     try {
       const result = await cloudinary.uploader.upload(userInfo.photo, {
@@ -308,7 +309,7 @@ async function handleOauthSignup(
           gravity: "face",
         },
       });
-      photo = result.secure_url;
+      photo = { public_id: result.public_id, version: result.version };
       onboardingStepsCompleted.push("profile-photo");
     } catch (error) {
       console.error("Failed to upload profile picture on cloudinary", error);

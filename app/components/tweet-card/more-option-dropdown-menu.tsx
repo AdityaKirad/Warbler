@@ -146,7 +146,7 @@ function DeleteTweetDialog({
             Delete
           </Button>
           <DialogClose asChild>
-            <Button className="rounded-full" variant="outline">
+            <Button className="rounded-full" variant="outline" type="button">
               Cancel
             </Button>
           </DialogClose>

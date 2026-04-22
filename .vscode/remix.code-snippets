@@ -3,7 +3,7 @@
     "prefix": "/loader",
     "scope": "typescript,typescriptreact",
     "body": [
-      "import type { Route } from \"./+types/${TM_FILENAME_BASE}.ts\"",
+      "import type { Route } from \"./+types/${TM_FILENAME_BASE}\"",
       "",
       "export async function loader({request}: Route.LoaderArgs) {",
       "   return {}",
@@ -15,7 +15,7 @@
     "prefix": "/action",
     "scope": "typescript,typescriptreact",
     "body": [
-      "import type { Route } from \"./+types/${TM_FILENAME_BASE}.ts\"",
+      "import type { Route } from \"./+types/${TM_FILENAME_BASE}\"",
       "",
       "export async function action({request}: Route.ActionArgs) {",
       "   return {}",

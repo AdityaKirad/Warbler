@@ -17,7 +17,7 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { Separator } from "~/components/ui/separator";
 import { useRequiredUser } from "~/hooks/use-user";
-import { getNameInitials } from "~/lib/utils";
+import { cld, getNameInitials } from "~/lib/utils";
 import { loginDialogAtom } from "~/routes/flow+/login";
 import { atom, useAtom } from "jotai";
 import { MoreHorizontalIcon } from "lucide-react";
@@ -38,10 +38,18 @@ export function UserDropdown() {
       <DropdownMenuTrigger asChild>
         <Button
           className="mt-auto h-auto rounded-full p-2 max-[30rem]:hidden"
+          type="button"
           variant="ghost">
           <Avatar>
             <AvatarImage
-              src={user.photo ?? DefaultProfilePicture}
+              src={
+                user.photo
+                  ? cld
+                      .image(user.photo.public_id)
+                      .setVersion(user.photo.version)
+                      .toURL()
+                  : DefaultProfilePicture
+              }
               alt={user.username}
               loading="lazy"
               decoding="async"
@@ -151,6 +159,7 @@ function MangageAccountsDialog() {
         <Separator />
         <button
           className="px-4 py-3 text-left text-blue-500 hover:bg-blue-500/5 focus-visible:bg-blue-500/5"
+          type="button"
           onClick={() => {
             openSet(false);
             loginDialogSet({
@@ -188,7 +197,14 @@ function SessionItem({
     <>
       <Avatar>
         <AvatarImage
-          src={user.photo ?? DefaultProfilePicture}
+          src={
+            user.photo
+              ? cld
+                  .image(user.photo.public_id)
+                  .setVersion(user.photo.version)
+                  .toURL()
+              : DefaultProfilePicture
+          }
           alt={`@${user.username}`}
           loading="lazy"
           decoding="async"

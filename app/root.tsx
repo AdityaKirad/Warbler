@@ -21,9 +21,10 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   return data(
     {
-      user: session?.user,
+      CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
       honeypotProps: await honeypot.getInputProps(),
       partykitUrl: process.env.PARTYKIT_URL,
+      user: session?.user,
     },
     {
       headers: clearSessionHeader
@@ -69,9 +70,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App({ loaderData }: Route.ComponentProps) {
+export default function App({
+  loaderData: { honeypotProps, CLOUDINARY_CLOUD_NAME },
+}: Route.ComponentProps) {
   return (
-    <HoneypotProvider {...loaderData.honeypotProps}>
+    <HoneypotProvider {...honeypotProps}>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `window.ENV = ${JSON.stringify({ CLOUDINARY_CLOUD_NAME })}`,
+        }}
+      />
       <Outlet />
       <LoginDialog />
     </HoneypotProvider>

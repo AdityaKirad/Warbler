@@ -69,7 +69,7 @@ async function handleAvatarUpdate(request: Request, userId: string) {
 
   async function uploadHandler(fileUpload: FileUpload) {
     if (fileUpload.fieldName !== "avatar") {
-      return undefined;
+      return;
     }
     try {
       const base64 = Buffer.from(await fileUpload.arrayBuffer()).toString(
@@ -93,7 +93,7 @@ async function handleAvatarUpdate(request: Request, userId: string) {
       return file.secure_url;
     } catch (error) {
       console.error(error);
-      return undefined;
+      return;
     }
   }
 

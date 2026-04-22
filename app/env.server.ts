@@ -5,7 +5,6 @@ const zodEnv = z.object({
   AUTH_SECRET: z.string().length(44),
   CLOUDINARY_API_KEY: z.string(),
   CLOUDINARY_API_SECRET: z.string(),
-  CLOUDINARY_CLOUD_NAME: z.string(),
   DATABASE_URL: z.string().url(),
   DATABASE_AUTH_TOKEN: z.string().optional(),
   DISCORD_CLIENT_ID: z.string(),
@@ -16,6 +15,7 @@ const zodEnv = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]),
   PARTYKIT_URL: z.string().url(),
   PLUNK_API_KEY: z.string(),
+  VITE_CLOUDINARY_CLOUD_NAME: z.string(),
 });
 
 try {

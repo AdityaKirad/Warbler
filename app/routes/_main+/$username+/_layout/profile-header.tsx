@@ -1,5 +1,6 @@
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { useUser } from "~/hooks/use-user";
+import { cld } from "~/lib/utils";
 import { Link } from "react-router";
 import type { UsernameLayoutLoader } from ".";
 import { EditProfile } from "./edit-profile";
@@ -10,6 +11,9 @@ export function ProfileHeader({
 }: {
   user: NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>["data"]>;
 }) {
+  const userImage = user.photo
+    ? cld.image(user.photo.public_id).setVersion(user.photo.version).toURL()
+    : DefaultProfilePicture;
   const currentUser = useUser();
   return (
     <div className="relative [--header-height:12.5rem]">
@@ -24,14 +28,14 @@ export function ProfileHeader({
           to="photo">
           <img
             className="size-(--photo-size) rounded-full"
-            src={user.photo ?? DefaultProfilePicture}
+            src={userImage}
             alt={user.name ?? "User profile"}
             decoding="async"
             loading="lazy"
           />
         </Link>
         {user.id === currentUser?.id ? (
-          <EditProfile user={user} />
+          <EditProfile {...user} />
         ) : (
           <ProfileActions user={user} />
         )}

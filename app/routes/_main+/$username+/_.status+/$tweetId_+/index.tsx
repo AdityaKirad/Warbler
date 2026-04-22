@@ -26,7 +26,7 @@ import {
 } from "~/components/ui/dialog";
 import { Separator } from "~/components/ui/separator";
 import { useUser } from "~/hooks/use-user";
-import { cn, formatNumber, getNameInitials } from "~/lib/utils";
+import { cld, cn, formatNumber, getNameInitials } from "~/lib/utils";
 import {
   followingFlag,
   getTweetReplies,
@@ -193,7 +193,14 @@ function TweetContent({
         <Avatar asChild>
           <Link to={`/${tweet.user.username}`}>
             <AvatarImage
-              src={tweet.user.photo ?? DefaultProfilePicture}
+              src={
+                tweet.user.photo
+                  ? cld
+                      .image(tweet.user.photo.public_id)
+                      .setVersion(tweet.user.photo.version)
+                      .toURL()
+                  : DefaultProfilePicture
+              }
               alt=""
             />
             <AvatarFallback>{getNameInitials(tweet.user.name)}</AvatarFallback>

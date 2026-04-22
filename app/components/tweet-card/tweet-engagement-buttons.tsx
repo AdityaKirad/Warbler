@@ -47,7 +47,7 @@ export function ViewsButton({ views }: { views: number }) {
         <DialogTitle className="text-[2rem]">Views</DialogTitle>
         <DialogDescription>Times this post was seen.</DialogDescription>
         <DialogClose className="rounded-full" asChild>
-          <Button>Dismiss</Button>
+          <Button type="button">Dismiss</Button>
         </DialogClose>
       </DialogContent>
     </Dialog>

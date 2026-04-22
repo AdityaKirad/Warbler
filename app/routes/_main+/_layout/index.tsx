@@ -156,7 +156,9 @@ function PostTweetDialog() {
   return (
     <Dialog open={dialog} onOpenChange={dialogSet}>
       <DialogTrigger asChild>
-        <Button className="rounded-full max-xl:size-14 max-[30rem]:hidden [&_svg]:size-6">
+        <Button
+          className="rounded-full max-xl:size-14 max-[30rem]:hidden [&_svg]:size-6"
+          type="button">
           <svg
             viewBox="0 0 24 24"
             className="xl:hidden"
