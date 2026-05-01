@@ -2,7 +2,7 @@ import { getUser } from "~/.server/utils";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { Button } from "~/components/ui/button";
 import { useOutsideClick } from "~/hooks/use-outside-click";
-import { cld } from "~/lib/utils";
+import { getImgSrc } from "~/lib/cloudinary";
 import { XIcon } from "lucide-react";
 import { useNavigate } from "react-router";
 import type { Route } from "./+types/photo";
@@ -51,10 +51,10 @@ export default function Page({ loaderData: user }: Route.ComponentProps) {
           decoding="async"
           src={
             user.photo
-              ? cld
-                  .image(user.photo.public_id)
-                  .setVersion(user.photo.version)
-                  .toURL()
+              ? getImgSrc({
+                  public_id: user.photo.public_id,
+                  version: user.photo.version,
+                })
               : DefaultProfilePicture
           }
           alt={`@${user.username}`}

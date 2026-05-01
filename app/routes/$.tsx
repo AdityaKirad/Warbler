@@ -1,4 +1,4 @@
-import Logo from "~/assets/logo-small.webp";
+import { AppLogo } from "~/components/icons/app-logo";
 import { Button } from "~/components/ui/button";
 import { Link } from "react-router";
 
@@ -9,14 +9,7 @@ export default function Page() {
     <div>
       <div className="px-2">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <img
-            src={Logo}
-            alt="App Logo"
-            height={80}
-            width={80}
-            decoding="async"
-            loading="lazy"
-          />
+          <AppLogo width={80} height={80} />
           <div className="flex gap-2 sm:hidden">
             <Button className="rounded-full" variant="outline" asChild>
               <Link to="/flow/login" aria-label="Log in">

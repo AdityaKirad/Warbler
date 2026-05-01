@@ -102,7 +102,7 @@ export const GoogleProvider: Provider = {
     return {
       providerId: sub,
       emailVerified: email_verified,
-      photo: picture,
+      photo: picture.replace("=s96-c", "=s400-c"),
       ...values,
     };
   },

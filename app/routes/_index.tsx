@@ -1,6 +1,5 @@
 import { requireAnonymous } from "~/.server/utils";
-import LogoSmall from "~/assets/logo-small.webp";
-import Logo from "~/assets/logo.webp";
+import { AppLogo } from "~/components/icons/app-logo";
 import { DiscordLogin, GoogleLogin } from "~/components/social-login";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
@@ -21,20 +20,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 export default function Page() {
   const navigate = useNavigate();
   return (
-    <div className="absolute inset-0 m-auto flex max-w-fit gap-8 px-4 max-lg:flex-col lg:max-h-fit">
-      <div>
-        <img
-          alt="brand logo"
-          className="object-cover object-center max-lg:size-20"
-          decoding="async"
-          height={400}
-          loading="lazy"
-          sizes="(max-width: 1024px) 80px, 400px"
-          src={Logo}
-          srcSet={`${LogoSmall} 80w, ${Logo}`}
-          width={400}
-        />
-      </div>
+    <div className="absolute inset-0 m-auto flex max-w-fit gap-8 px-4 py-8 max-lg:flex-col lg:max-h-fit">
+      <AppLogo className="max-lg:size-20" height={400} width={400} />
       <div className="font-bold">
         <h1 className="text-[2.5rem] sm:text-6xl">Happening now</h1>
         <h2 className="mt-8 mb-4 text-4xl sm:text-5xl">Join today</h2>

@@ -3,7 +3,8 @@ import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
-import { cld, getNameInitials } from "~/lib/utils";
+import { getImgSrc } from "~/lib/cloudinary";
+import { getNameInitials } from "~/lib/utils";
 import { Link } from "react-router";
 import { CharCounter } from "./tweet-form/char-counter";
 import { EmojiPopover } from "./tweet-form/emoji-popover";
@@ -32,10 +33,10 @@ export function DialogTweetForm(props: {
             <AvatarImage
               src={
                 user.photo
-                  ? cld
-                      .image(user.photo.public_id)
-                      .setVersion(user.photo.version)
-                      .toURL()
+                  ? getImgSrc({
+                      public_id: user.photo.public_id,
+                      version: user.photo.version,
+                    })
                   : DefaultProfilePicture
               }
               alt={user.username}

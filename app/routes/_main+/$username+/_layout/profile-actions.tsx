@@ -33,7 +33,7 @@ export function ProfileActions({
 }) {
   const currentUser = useUser();
   return (
-    <div className="float-right mt-4 mr-4 flex gap-2">
+    <div className="absolute right-4 -bottom-16 flex gap-2">
       {currentUser ? (
         <>
           <DropdownMenu>

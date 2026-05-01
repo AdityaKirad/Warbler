@@ -1,7 +1,7 @@
 import { getUser } from "~/.server/utils";
 import { Button } from "~/components/ui/button";
 import { useOutsideClick } from "~/hooks/use-outside-click";
-import { cld } from "~/lib/utils";
+import { getImgSrc } from "~/lib/cloudinary";
 import { XIcon } from "lucide-react";
 import { useNavigate, useRouteLoaderData } from "react-router";
 import type { loader as LayoutLoader } from "./_layout";
@@ -49,10 +49,10 @@ export default function Page() {
           decoding="async"
           src={
             data?.photo
-              ? cld
-                  .image(data.photo.public_id)
-                  .setVersion(data.photo.version)
-                  .toURL()
+              ? getImgSrc({
+                  public_id: data?.photo.public_id,
+                  version: data?.photo.version,
+                })
               : ""
           }
           alt={`@${data?.username}`}

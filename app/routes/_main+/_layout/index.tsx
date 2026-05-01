@@ -1,6 +1,6 @@
 import { getUsers } from "~/.server/utils";
-import Logo from "~/assets/logo-small.webp";
 import { DialogTweetForm } from "~/components/dialog-tweet-form";
+import { AppLogo } from "~/components/icons/app-logo";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -70,17 +70,10 @@ export default function Layout({ loaderData }: Route.ComponentProps) {
         <div className="transition-[width] min-[30rem]:w-20 xl:w-70">
           <nav className="fixed bottom-0 flex gap-2 p-2 transition-[width] max-xl:items-center max-[30rem]:inset-x-0 max-[30rem]:justify-between max-[30rem]:border-t min-[30rem]:top-0 min-[30rem]:w-20 min-[30rem]:flex-col xl:w-70">
             <NavLink
-              className="hover:bg-muted inline size-14 rounded-full outline-2 outline-transparent transition-[colors,outline] focus-visible:outline-white max-[30rem]:hidden"
+              className="hover:bg-muted w-fit rounded-full p-2 outline-2 outline-transparent transition-[colors,outline] focus-visible:outline-white max-[30rem]:hidden"
               to="/home"
               aria-label="Home">
-              <img
-                src={Logo}
-                alt="App Logo"
-                width={56}
-                height={56}
-                decoding="async"
-                loading="lazy"
-              />
+              <AppLogo height={40} width={40} />
             </NavLink>
 
             {user
@@ -108,15 +101,7 @@ export default function Layout({ loaderData }: Route.ComponentProps) {
           {onboardingStep ? (
             <div className="bg-muted/60 fixed inset-0">
               <div className={dialogContentClassName}>
-                <img
-                  className="mx-auto"
-                  src={Logo}
-                  alt="App Logo"
-                  decoding="async"
-                  loading="lazy"
-                  width={56}
-                  height={56}
-                />
+                <AppLogo className="mx-auto" height={56} width={56} />
                 <OnboardingStep
                   step={onboardingStep}
                   hasNextStep={hasNextStep}

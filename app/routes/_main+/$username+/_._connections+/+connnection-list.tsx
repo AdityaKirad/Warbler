@@ -2,7 +2,8 @@ import type { UserSelectType } from "~/.server/drizzle";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
-import { cld, getNameInitials } from "~/lib/utils";
+import { getImgSrc } from "~/lib/cloudinary";
+import { getNameInitials } from "~/lib/utils";
 import { Form, Link } from "react-router";
 
 type ConnectionCardProps = Pick<
@@ -41,10 +42,10 @@ function ConnectionCard(connection: ConnectionCardProps) {
         <AvatarImage
           src={
             connection.photo
-              ? cld
-                  .image(connection.photo.public_id)
-                  .setVersion(connection.photo.version)
-                  .toURL()
+              ? getImgSrc({
+                  public_id: connection.photo.public_id,
+                  version: connection.photo.version,
+                })
               : DefaultProfilePicture
           }
           alt={`@${connection.username}`}

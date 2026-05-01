@@ -1,7 +1,7 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
-import { DateField, ErrorList, Field } from "~/components/forms";
+import { DateField, Field } from "~/components/forms";
 import { Spinner } from "~/components/spinner";
 import { Button } from "~/components/ui/button";
 import {
@@ -10,13 +10,32 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
+import { useFileInput } from "~/hooks/use-file-input";
 import { useIsPending } from "~/hooks/use-is-pending";
 import { useUser } from "~/hooks/use-user";
+import { uploadToCloudinary } from "~/lib/cloudinary";
+import { DOBSchema, UsernameSchema } from "~/lib/user-validation";
+import { cn } from "~/lib/utils";
 import { CameraIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useFetcher } from "react-router";
+import { toast } from "sonner";
+import { z } from "zod";
 import type { action } from ".";
-import { avatarSchema, dobSchema, usernameSchema } from "./schema";
+
+const avatarSchema = z.object({
+  intent: z.enum(["skip", "update"]),
+  avatar: z.instanceof(File).optional(),
+});
+
+export const dobSchema = z.object({
+  dob: DOBSchema,
+});
+
+export const usernameSchema = z.object({
+  intent: z.enum(["skip", "update"]),
+  username: UsernameSchema,
+});
 
 export function DOB({
   title,
@@ -49,7 +68,7 @@ export function DOB({
         label="Date of Birth"
       />
 
-      <input type="hidden" name="update_field" value="dob" />
+      <input type="hidden" name="update" value="dob" />
 
       <Button
         className="mt-auto mb-4 rounded-full"
@@ -72,63 +91,121 @@ export function ProfilePhoto({
 }) {
   const isPending = useIsPending();
   const fetcher = useFetcher<typeof action>();
-  const [imageSrc, imageSrcSet] = useState<string | null>(
-    DefaultProfilePicture,
-  );
-  const [form, fields] = useForm({
+  const [imgSrc, imgSrcSet] = useState<{ src: string; file: File | null }>({
+    src: DefaultProfilePicture,
+    file: null,
+  });
+  const [form] = useForm({
     id: "avatar",
     lastResult: fetcher.data,
     constraint: getZodConstraint(avatarSchema),
     onValidate: ({ formData }) =>
       parseWithZod(formData, { schema: avatarSchema }),
+    async onSubmit(evt, { formData }) {
+      evt.preventDefault();
+
+      if (formData.get("intent") === "update") {
+        if (!imgSrc.file) {
+          toast("Please select a file");
+          return;
+        }
+
+        URL.revokeObjectURL(imgSrc.src);
+
+        try {
+          const data = await uploadToCloudinary(imgSrc.file, "avatar");
+          formData.set("avatar", JSON.stringify(data));
+        } catch (error) {
+          console.error(error);
+          toast((error as Error).message);
+          return;
+        }
+      } else {
+        if (imgSrc.file) {
+          URL.revokeObjectURL(imgSrc.src);
+        }
+      }
+
+      fetcher.submit(formData, {
+        method: "POST",
+        action: "/onboarding",
+      });
+    },
+  });
+  const {
+    accept,
+    dragOver,
+    handleDragEnter,
+    handleDragLeave,
+    handleDragOver,
+    handleDrop,
+    handleFileInputChange,
+  } = useFileInput({
+    type: "profile",
+    maxSize: 2 * 1024 * 1024,
+    onFiles(files) {
+      const file = files[0]!;
+      imgSrcSet((prev) => {
+        if (prev.src.startsWith("blob:")) {
+          URL.revokeObjectURL(prev.src);
+        }
+        return { src: URL.createObjectURL(file), file };
+      });
+    },
+    onInvalidFiles() {
+      toast("Invalid file type or file exceeds size limit");
+    },
   });
   return (
     <fetcher.Form
       className="contents"
       method="POST"
-      encType="multipart/form-data"
       action="/onboarding"
       {...getFormProps(form)}>
       <h2 className="text-heading font-semibold">{title}</h2>
       <p className="text-muted-foreground text-sm">{description}</p>
 
-      <div className="m-auto grid place-items-center gap-2">
-        <div
-          className="grid size-30 place-items-center rounded-full bg-cover bg-center bg-no-repeat outline-2 outline-offset-2"
-          style={{
-            backgroundImage: `url(${imageSrc})`,
-          }}>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <label className="bg-background/50 hover:bg-background/70 has-focus-visible:bg-background/70 rounded-full p-3 transition-colors">
-                  <CameraIcon />
-                  <input
-                    className="sr-only"
-                    accept="image/pjp,image/jfif,image/jpe,image/pjpeg,image/jpg,image/jpeg,image/png,image/webp"
-                    onChange={(evt) => {
-                      const file = evt.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (evt) =>
-                          imageSrcSet(evt.target?.result?.toString() ?? null);
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                    {...getInputProps(fields.avatar, { type: "file" })}
-                  />
-                </label>
-              </TooltipTrigger>
-              <TooltipContent>Add photo</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-        <ErrorList errors={fields.avatar.errors} id={fields.avatar.id} />
+      <div
+        className={cn(
+          "relative m-auto size-30 rounded-full outline-2 outline-offset-2 transition-colors",
+          { "outline-blue-500 outline-dashed": dragOver },
+        )}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}>
+        <img
+          className="aspect-square rounded-full object-cover object-center"
+          src={imgSrc.src}
+          alt="Profile avatar"
+          decoding="async"
+          loading="lazy"
+        />
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <label className="bg-background/50 hover:bg-background/70 has-focus-visible:bg-background/70 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full p-3 transition-colors">
+                <CameraIcon />
+                <input
+                  className="sr-only"
+                  accept={accept}
+                  type="file"
+                  onChange={handleFileInputChange}
+                />
+              </label>
+            </TooltipTrigger>
+            <TooltipContent>Add photo</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
+
+      <input type="hidden" name="update" value="avatar" />
 
       <Button
         className="mt-auto rounded-full"
         type="submit"
+        name="intent"
+        value="update"
         disabled={isPending}>
         {isPending ? <Spinner /> : hasNextStep ? "Next" : "Save"}
       </Button>
@@ -137,7 +214,8 @@ export function ProfilePhoto({
         className="mb-4 rounded-full"
         variant="outline"
         type="submit"
-        formAction="/onboarding?intent=skip"
+        name="intent"
+        value="skip"
         disabled={isPending}>
         Skip for now
       </Button>
@@ -225,7 +303,7 @@ export function Username({
         </Button>
       )}
 
-      <input type="hidden" name="update_field" value="username" />
+      <input type="hidden" name="update" value="username" />
 
       <Button
         className="mt-auto rounded-full"

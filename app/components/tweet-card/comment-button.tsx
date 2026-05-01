@@ -2,7 +2,8 @@ import { renderToReactElement } from "@tiptap/static-renderer/pm/react";
 import type { UserSelectType } from "~/.server/drizzle";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { useUser } from "~/hooks/use-user";
-import { cld, formatTweetDate, getNameInitials } from "~/lib/utils";
+import { getImgSrc } from "~/lib/cloudinary";
+import { formatTweetDate, getNameInitials } from "~/lib/utils";
 import { format } from "date-fns";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -74,10 +75,10 @@ function AuthenicatedContent({
               <AvatarImage
                 src={
                   user.photo
-                    ? cld
-                        .image(user.photo.public_id)
-                        .setVersion(user.photo.version)
-                        .toURL()
+                    ? getImgSrc({
+                        public_id: user.photo.public_id,
+                        version: user.photo.version,
+                      })
                     : DefaultProfilePicture
                 }
                 alt={user.username}

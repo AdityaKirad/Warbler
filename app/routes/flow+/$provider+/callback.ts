@@ -38,8 +38,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     return redirectWithFlash({ error: "Invalid Provider" });
   }
 
-  const result = await provider.handleCallback(request);
-
   const redirectTo = await getRedirectCookieValue(request);
 
   const headers = new Headers();
@@ -53,6 +51,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     "set-cookie",
     await oauthCodeVerifierCookie.serialize("", { maxAge: -1 }),
   );
+
+  const result = await provider.handleCallback(request);
 
   if (!result) {
     return redirectWithFlash({
@@ -299,14 +299,14 @@ async function handleOauthSignup(
   if (userInfo.photo) {
     try {
       const result = await cloudinary.uploader.upload(userInfo.photo, {
-        folder: "profile-pictures",
+        folder: "avatars",
         allowed_formats: ["jpg", "png", "webp"],
         resource_type: "image",
         transformation: {
           width: 400,
           height: 400,
           crop: "fill",
-          gravity: "face",
+          gravity: "auto:face",
         },
       });
       photo = { public_id: result.public_id, version: result.version };
@@ -323,6 +323,7 @@ async function handleOauthSignup(
   return db.transaction(async (tx) => {
     const [username] = await generateUsernameSuggestions(tx, {
       ...userInfo,
+      dob: null,
       count: 1,
     });
 

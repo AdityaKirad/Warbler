@@ -1,6 +1,7 @@
 import { EditorContent } from "@tiptap/react";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
-import { cld, cn, getNameInitials } from "~/lib/utils";
+import { getImgSrc } from "~/lib/cloudinary";
+import { cn, getNameInitials } from "~/lib/utils";
 import { Link, useSearchParams } from "react-router";
 import { ClientOnly } from "remix-utils/client-only";
 import { EmojiPopover, useTweetForm } from "./tweet-form";
@@ -42,10 +43,10 @@ export function FeedsTweetForm({
           <AvatarImage
             src={
               user.photo
-                ? cld
-                    .image(user.photo.public_id)
-                    .setVersion(user.photo.version)
-                    .toURL()
+                ? getImgSrc({
+                    public_id: user.photo.public_id,
+                    version: user.photo.version,
+                  })
                 : DefaultProfilePicture
             }
             alt={user.username}

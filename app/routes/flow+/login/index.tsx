@@ -1,6 +1,6 @@
 import { checkHoneyPot } from "~/.server/honeypot";
 import { flashSessionStorage } from "~/.server/session/flash";
-import Logo from "~/assets/logo-small.webp";
+import { AppLogo } from "~/components/icons/app-logo";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
 import { EmailSchema, UsernameSchema } from "~/lib/user-validation";
 import { atom, useAtom } from "jotai";
@@ -117,13 +117,7 @@ export function LoginDialog() {
         }
       }}>
       <DialogContent aria-describedby={undefined}>
-        <img
-          className="mx-auto"
-          src={Logo}
-          alt="App Logo"
-          width={80}
-          height={80}
-        />
+        <AppLogo className="mx-auto" height={80} width={80} />
         {!method ? (
           <GetLoginVariant
             flash={loaderData?.flash}

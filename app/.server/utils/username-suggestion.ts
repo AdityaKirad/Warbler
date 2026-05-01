@@ -51,16 +51,16 @@ export async function generateUsernameSuggestions(
   }: {
     name: string;
     email: string;
-    dob?: Date | string | null;
-    count?: number;
+    dob: Date | null;
+    count: number;
   },
 ) {
   const sanitizedName = sanitizeUsername(
     name.toLowerCase().replace(/\s+/g, ""),
   );
 
-  const emailPrefix = email.toLowerCase().split("@")[0];
-  const sanitizedEmail = emailPrefix ? sanitizeUsername(emailPrefix) : "";
+  const emailPrefix = email.split("@")[0];
+  const sanitizedEmail = sanitizeUsername(emailPrefix ?? "");
 
   let bases = [sanitizedName, sanitizedEmail]
     .map(ensureValidStart)
@@ -77,8 +77,7 @@ export async function generateUsernameSuggestions(
 
     if (dob) {
       try {
-        const date = typeof dob === "string" ? new Date(dob) : dob;
-        const year = date.getFullYear();
+        const year = dob.getFullYear();
         const currentYear = new Date().getFullYear();
 
         if (year > 1900 && year <= currentYear) {

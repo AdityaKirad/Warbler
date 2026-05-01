@@ -1,6 +1,6 @@
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
 import { useUser } from "~/hooks/use-user";
-import { cld } from "~/lib/utils";
+import { getImgSrc } from "~/lib/cloudinary";
 import { Link } from "react-router";
 import type { UsernameLayoutLoader } from ".";
 import { EditProfile } from "./edit-profile";
@@ -11,24 +11,37 @@ export function ProfileHeader({
 }: {
   user: NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>["data"]>;
 }) {
-  const userImage = user.photo
-    ? cld.image(user.photo.public_id).setVersion(user.photo.version).toURL()
-    : DefaultProfilePicture;
   const currentUser = useUser();
   return (
-    <div className="relative [--header-height:12.5rem]">
-      {user.coverImage ? (
-        <Link to="cover_image"></Link>
-      ) : (
-        <div className="bg-muted h-(--header-height)" />
+    <div className="bg-muted relative h-50">
+      {user.coverImage && (
+        <Link to="">
+          <img
+            className="object-fit object-cover object-center"
+            src={getImgSrc({
+              public_id: user.coverImage.public_id,
+              version: user.coverImage.version,
+            })}
+            alt={`@${user.username}`}
+            decoding="async"
+            loading="lazy"
+          />
+        </Link>
       )}
       <div>
         <Link
-          className="bg-background absolute top-[calc(var(--header-height)-var(--photo-size)/2)] left-4 rounded-full p-1 [--photo-size:7.5rem]"
+          className="bg-background absolute -bottom-16 left-4 size-32 rounded-full p-1"
           to="photo">
           <img
-            className="size-(--photo-size) rounded-full"
-            src={userImage}
+            className="rounded-full"
+            src={
+              user.photo
+                ? getImgSrc({
+                    public_id: user.photo.public_id,
+                    version: user.photo.version,
+                  })
+                : DefaultProfilePicture
+            }
             alt={user.name ?? "User profile"}
             decoding="async"
             loading="lazy"

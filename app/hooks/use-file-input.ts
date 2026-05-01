@@ -1,4 +1,4 @@
-import { ALLOWED_FORMATS } from "~/lib/utils";
+import { ALLOWED_FORMATS } from "~/lib/cloudinary";
 import { useState } from "react";
 
 export function useFileInput({
@@ -16,7 +16,7 @@ export function useFileInput({
 }) {
   const [dragOver, dragOverSet] = useState(false);
 
-  const allowedFormats =
+  const accept =
     type === "profile"
       ? Object.values(ALLOWED_FORMATS).filter((format) =>
           format.startsWith("image/"),
@@ -32,8 +32,7 @@ export function useFileInput({
     const invalidFiles: File[] = [];
 
     Array.from(list).forEach((file) => {
-      const isValid =
-        allowedFormats.includes(file.type) && file.size <= maxSize;
+      const isValid = accept.includes(file.type) && file.size <= maxSize;
 
       if (isValid) {
         validFiles.push(file);
@@ -49,12 +48,12 @@ export function useFileInput({
     };
   }
 
-  function handleDragOver(evt: React.DragEvent<HTMLElement>) {
-    evt.preventDefault();
-    dragOverSet(true);
-  }
+  const handleDragEnter = () => dragOverSet(true);
 
   const handleDragLeave = () => dragOverSet(false);
+
+  const handleDragOver = (evt: React.DragEvent<HTMLElement>) =>
+    evt.preventDefault();
 
   function handleDrop(evt: React.DragEvent<HTMLElement>) {
     evt.preventDefault();
@@ -96,9 +95,11 @@ export function useFileInput({
   }
 
   return {
+    accept: accept.join(","),
     dragOver,
-    handleDragOver,
+    handleDragEnter,
     handleDragLeave,
+    handleDragOver,
     handleDrop,
     handleFileInputChange,
   };

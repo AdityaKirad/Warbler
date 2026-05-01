@@ -1,4 +1,3 @@
-import Logo from "~/assets/logo.webp";
 import { useUser } from "~/hooks/use-user";
 import { cn } from "~/lib/utils";
 import { ChartNoAxesColumnIcon } from "lucide-react";
@@ -6,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { FetcherWithComponents } from "react-router";
 import { Link } from "react-router";
 import { BookmarkOutlinedIcon } from "../icons";
+import { AppLogo } from "../icons/app-logo";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -66,15 +66,7 @@ function NonAuthenticatedBookmarkButton({
         <span>{count}</span>
       </DialogTrigger>
       <DialogContent className="justify-center py-20 max-sm:px-8 sm:h-fit">
-        <img
-          className="mx-auto"
-          src={Logo}
-          height={56}
-          width={56}
-          alt="Warbler"
-          decoding="async"
-          loading="lazy"
-        />
+        <AppLogo className="mx-auto" height={56} width={56} />
         <DialogTitle>Don't miss what's happening</DialogTitle>
         <DialogDescription>
           People on Warbler are the first to know.

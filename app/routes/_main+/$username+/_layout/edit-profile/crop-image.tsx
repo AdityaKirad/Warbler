@@ -1,4 +1,5 @@
 import { Slider } from "~/components/ui/slider";
+import { ZoomInIcon, ZoomOutIcon } from "lucide-react";
 import { useState } from "react";
 import Cropper from "react-easy-crop";
 
@@ -51,7 +52,8 @@ export function CropImage({
           }}
         />
       </div>
-      <div className="bg-background px-16 py-2">
+      <div className="bg-background flex items-center gap-2 px-16 py-2">
+        <ZoomOutIcon className="stroke-accent-foreground" />
         <Slider
           min={1}
           max={3}
@@ -59,6 +61,7 @@ export function CropImage({
           value={[zoom]}
           onValueChange={(val) => zoomSet(val[0] as number)}
         />
+        <ZoomInIcon />
       </div>
     </>
   );

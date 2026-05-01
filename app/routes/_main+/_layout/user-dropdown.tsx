@@ -17,7 +17,8 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { Separator } from "~/components/ui/separator";
 import { useRequiredUser } from "~/hooks/use-user";
-import { cld, getNameInitials } from "~/lib/utils";
+import { getImgSrc } from "~/lib/cloudinary";
+import { getNameInitials } from "~/lib/utils";
 import { loginDialogAtom } from "~/routes/flow+/login";
 import { atom, useAtom } from "jotai";
 import { MoreHorizontalIcon } from "lucide-react";
@@ -44,10 +45,10 @@ export function UserDropdown() {
             <AvatarImage
               src={
                 user.photo
-                  ? cld
-                      .image(user.photo.public_id)
-                      .setVersion(user.photo.version)
-                      .toURL()
+                  ? getImgSrc({
+                      public_id: user.photo.public_id,
+                      version: user.photo.version,
+                    })
                   : DefaultProfilePicture
               }
               alt={user.username}
@@ -199,10 +200,10 @@ function SessionItem({
         <AvatarImage
           src={
             user.photo
-              ? cld
-                  .image(user.photo.public_id)
-                  .setVersion(user.photo.version)
-                  .toURL()
+              ? getImgSrc({
+                  public_id: user.photo.public_id,
+                  version: user.photo.version,
+                })
               : DefaultProfilePicture
           }
           alt={`@${user.username}`}

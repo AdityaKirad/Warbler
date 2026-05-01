@@ -3,7 +3,8 @@ import type {
   SuggestionProps,
 } from "@tiptap/suggestion";
 import DefaultProfilePicture from "~/assets/default-profile-picture.png";
-import { cld, getNameInitials } from "~/lib/utils";
+import { getImgSrc } from "~/lib/cloudinary";
+import { getNameInitials } from "~/lib/utils";
 import {
   forwardRef,
   useCallback,
@@ -123,10 +124,10 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
                 <AvatarImage
                   src={
                     item.photo
-                      ? cld
-                          .image(item.photo.public_id)
-                          .setVersion(item.photo.version)
-                          .toURL()
+                      ? getImgSrc({
+                          public_id: item.photo.public_id,
+                          version: item.photo.version,
+                        })
                       : DefaultProfilePicture
                   }
                   alt={`@${item.username}`}

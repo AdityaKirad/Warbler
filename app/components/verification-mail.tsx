@@ -4,12 +4,12 @@ import {
   Head,
   Heading,
   Html,
-  Img,
   Preview,
   Section,
   Tailwind,
   Text,
 } from "@react-email/components";
+import { AppLogo } from "./icons/app-logo";
 
 type MailProps = { code: string } & (
   | { type: "signup" }
@@ -32,14 +32,7 @@ export function VerificationMail(props: Readonly<MailProps>) {
         <Body className="m-0 bg-sky-50 font-sans">
           <Container className="h-screen max-w-lg bg-white p-4">
             <Section>
-              <Img
-                alt="Warbler"
-                className="mr-0 ml-auto bg-black bg-cover bg-no-repeat text-white italic"
-                height={48}
-                src={`${process.env.APP_URL}/logo-small.webp`}
-                style={{ shapeMargin: "12px" }}
-                width={48}
-              />
+              <AppLogo height={48} width={48} />
             </Section>
             {props.type === "signup" ? (
               <SignupMail code={props.code} />

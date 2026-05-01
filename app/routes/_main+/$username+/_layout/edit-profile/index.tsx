@@ -15,7 +15,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "~/components/ui/dialog";
-import { ALLOWED_FORMATS, cld, cn } from "~/lib/utils";
+import { getImgSrc } from "~/lib/cloudinary";
+import { cn } from "~/lib/utils";
 import { format } from "date-fns";
 import { ArrowLeftIcon, ChevronRightIcon, XIcon } from "lucide-react";
 import type { UsernameLayoutLoader } from "..";
@@ -23,10 +24,6 @@ import { CropImage } from "./crop-image";
 import { CoverImage, ProfileImage } from "./image-fields";
 import { useEditProfile } from "./use-edit-profile";
 import { useProfileImages } from "./use-profile-images";
-
-const IMAGE_MIME_TYPES = Object.values(ALLOWED_FORMATS).filter((mime) =>
-  mime.startsWith("image"),
-);
 
 export function EditProfile({
   photo,
@@ -47,34 +44,36 @@ export function EditProfile({
     crop,
     files,
     imgSrc,
-    closeCrop,
+    applyCrop,
     cropDimensionsSet,
-    cropFile,
     removeCoverImage,
     reset,
     selectFile,
   } = useProfileImages({
     photo: photo
-      ? cld.image(photo.public_id).setVersion(photo.version).toURL()
+      ? getImgSrc({ public_id: photo.public_id, version: photo.version })
       : DefaultProfilePicture,
     coverImage: coverImage
-      ? cld.image(coverImage.public_id).setVersion(coverImage.version).toURL()
+      ? getImgSrc({
+          public_id: coverImage.public_id,
+          version: coverImage.version,
+        })
       : null,
   });
   const { editDob, fetcher, fields, form, formId, open, editDobSet, openSet } =
-    useEditProfile(user, files);
+    useEditProfile({ coverImage, ...user }, files, reset);
   return (
     <Dialog
       open={open}
       onOpenChange={(open) => {
-        openSet(open);
         if (!open) {
           reset();
         }
+        openSet(open);
       }}>
       <DialogTrigger asChild>
         <Button
-          className="float-right mt-4 mr-8 rounded-full"
+          className="absolute right-4 -bottom-16 rounded-full"
           type="button"
           variant="outline">
           Edit Profile
@@ -91,7 +90,7 @@ export function EditProfile({
               variant="ghost"
               size="icon"
               type="button"
-              onClick={closeCrop}>
+              onClick={applyCrop}>
               <ArrowLeftIcon />
             </Button>
           ) : (
@@ -116,7 +115,7 @@ export function EditProfile({
             <Button
               className="ml-auto rounded-full px-6"
               type="button"
-              onClick={cropFile}>
+              onClick={applyCrop}>
               Apply
             </Button>
           )}
@@ -135,14 +134,12 @@ export function EditProfile({
           {...getFormProps(form)}>
           <div className="relative mb-14 h-50">
             <CoverImage
-              accepted_mime_types={IMAGE_MIME_TYPES.join(",")}
               coverImage={imgSrc.coverImage}
               username={user.username}
               selectFile={(file) => selectFile("coverImage", file)}
               removeCoverImage={removeCoverImage}
             />
             <ProfileImage
-              accepted_mime_types={IMAGE_MIME_TYPES.join(",")}
               photo={imgSrc.photo}
               username={user.username}
               selectFile={(file) => selectFile("photo", file)}

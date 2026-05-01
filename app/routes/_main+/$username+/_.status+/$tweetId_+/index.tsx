@@ -26,7 +26,8 @@ import {
 } from "~/components/ui/dialog";
 import { Separator } from "~/components/ui/separator";
 import { useUser } from "~/hooks/use-user";
-import { cld, cn, formatNumber, getNameInitials } from "~/lib/utils";
+import { getImgSrc } from "~/lib/cloudinary";
+import { cn, formatNumber, getNameInitials } from "~/lib/utils";
 import {
   followingFlag,
   getTweetReplies,
@@ -195,10 +196,10 @@ function TweetContent({
             <AvatarImage
               src={
                 tweet.user.photo
-                  ? cld
-                      .image(tweet.user.photo.public_id)
-                      .setVersion(tweet.user.photo.version)
-                      .toURL()
+                  ? getImgSrc({
+                      public_id: tweet.user.photo.public_id,
+                      version: tweet.user.photo.version,
+                    })
                   : DefaultProfilePicture
               }
               alt=""
