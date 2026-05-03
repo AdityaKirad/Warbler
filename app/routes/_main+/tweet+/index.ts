@@ -17,9 +17,7 @@ export async function action({
   | { status: "error"; message: string; value: string }
   | { status: "success"; id: string; value: string }
 > {
-  const {
-    user: { id: userId, profileVerified },
-  } = await requireUser(request);
+  const { id: userId, profileVerified } = await requireUser(request);
 
   const formData = await request.formData();
 

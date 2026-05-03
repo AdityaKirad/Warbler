@@ -10,11 +10,11 @@ import type { Route } from "./+types/cover_image";
 export async function loader({ request }: Route.LoaderArgs) {
   const user = await getUser(request);
 
-  if (!user.session) {
+  if (!user.user) {
     throw new Response("Not Found", { status: 400 });
   }
 
-  return user.session.user;
+  return user.user;
 }
 
 export const meta = ({ loaderData: user }: Route.MetaArgs) => [

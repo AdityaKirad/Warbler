@@ -27,7 +27,7 @@ export const USERNAME_LAYOUT_ROUTE_ID =
   "routes/_main+/$username+/_layout/index";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  const { session, clearSessionHeader } = await getUser(request);
+  const { user: currentUser, clearSessionHeader } = await getUser(request);
 
   const { pathname } = new URL(request.url);
 
@@ -97,14 +97,14 @@ export async function loader({ params, request }: Route.LoaderArgs) {
         posts: db.$count(tweet, where),
       },
 
-      ...(session?.user.id
+      ...(currentUser?.id
         ? {
             following: sql<boolean>`
               EXISTS(
                 SELECT 1 
                 FROM ${userFollow} 
                 WHERE ${userFollow.followingId} = ${user.id} 
-                AND ${userFollow.followerId} = ${session.user.id}
+                AND ${userFollow.followerId} = ${currentUser.id}
               )
             `,
           }

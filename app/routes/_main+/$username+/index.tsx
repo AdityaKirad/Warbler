@@ -22,14 +22,14 @@ export function meta({ matches }: Route.MetaArgs) {
 }
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  const { session, clearSessionHeader } = await getUser(request);
+  const { user, clearSessionHeader } = await getUser(request);
 
   const url = new URL(request.url);
   const cursor = url.searchParams.get("cursor");
 
   const tweets = await getUserPosts({
     cursor,
-    userId: session?.user.id,
+    userId: user?.id,
     username: params.username,
   });
 

@@ -49,9 +49,9 @@ export const meta = ({ loaderData: { post } }: Route.MetaArgs) => [
 ];
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  const { session, clearSessionHeader } = await getUser(request);
+  const { user: currentUser, clearSessionHeader } = await getUser(request);
 
-  const currentUserId = session?.user.id;
+  const currentUserId = currentUser?.id;
 
   const [post] = await db
     .select({

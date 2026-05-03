@@ -39,9 +39,7 @@ const schema = baseSchema.extend({
 });
 
 export async function action({ request }: Route.ActionArgs) {
-  const {
-    user: { id: currentUserId },
-  } = await requireUser(request);
+  const { id } = await requireUser(request);
 
   const formData = await request.formData();
 
@@ -63,7 +61,7 @@ export async function action({ request }: Route.ActionArgs) {
       ...data,
       coverImage: isDeleteCoverImage ? null : coverImage,
     })
-    .where(eq(user.id, currentUserId))
+    .where(eq(user.id, id))
     .returning();
 
   if (isDeleteCoverImage) {

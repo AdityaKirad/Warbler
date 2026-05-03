@@ -21,9 +21,7 @@ const transformations: Record<Exclude<UploadType, "post">, string> = {
 };
 
 export async function action({ request }: Route.ActionArgs) {
-  const {
-    user: { id, photo },
-  } = await requireUser(request);
+  const { id, photo } = await requireUser(request);
 
   const json = await request.json();
 

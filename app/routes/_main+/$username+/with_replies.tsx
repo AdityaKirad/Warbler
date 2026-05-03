@@ -24,9 +24,9 @@ export function meta({ matches }: Route.MetaArgs) {
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-  const { session, clearSessionHeader } = await getUser(request);
+  const { user, clearSessionHeader } = await getUser(request);
 
-  if (!session) {
+  if (!user) {
     return data(null, {
       headers: {
         "set-cookie": clearSessionHeader,
@@ -39,7 +39,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
   const tweets = await getUserPostsWithReplies({
     cursor,
-    userId: session.user.id,
+    userId: user.id,
     username: params.username,
   });
 

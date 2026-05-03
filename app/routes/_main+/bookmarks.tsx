@@ -18,9 +18,7 @@ export const meta = () => [
 ];
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const {
-    user: { id: userId },
-  } = await requireUser(request);
+  const { id: userId } = await requireUser(request);
 
   const url = new URL(request.url);
   const cursor = url.searchParams.get("cursor");

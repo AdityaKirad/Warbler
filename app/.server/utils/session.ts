@@ -14,6 +14,7 @@ import {
 import type { DrizzleAdapter } from "../drizzle";
 import { db } from "../drizzle";
 import { session, user } from "../drizzle/schema";
+import { sessionDataStorage } from "../session/session-data";
 import { getIpLocation } from "./ip-location";
 import { parseCookies } from "./parse-cookies";
 
@@ -95,14 +96,18 @@ export async function getUsers(request: Request) {
   };
 }
 
-export async function getUser(request: Request) {
+export async function getUser(
+  request: Request,
+  { getFreshSession = false }: { getFreshSession?: boolean } = {},
+) {
   const token = await sessionCookie.parse(request.headers.get("cookie"));
 
   if (!token) {
-    return { session: null, clearSessionHeader: "" };
+    return { clearSessionHeader: null, user: null };
   }
 
   const dbSession = await db.query.session.findFirst({
+    columns: { updatedAt: true, expiresAt: true },
     with: {
       user: {
         columns: {
@@ -127,28 +132,28 @@ export async function getUser(request: Request) {
     }
 
     return {
-      session: null,
       clearSessionHeader: await sessionCookie.serialize("", { maxAge: -1 }),
+      user: null,
     };
   }
 
   return {
-    session: dbSession,
+    user: dbSession.user,
   };
 }
 
 export async function requireAnonymous(request: Request) {
-  const { session } = await getUser(request);
+  const { user } = await getUser(request);
 
-  if (session) {
+  if (user) {
     throw redirect("/home");
   }
 }
 
 export async function requireUser(request: Request) {
-  const { session: authSession, clearSessionHeader } = await getUser(request);
+  const { user, clearSessionHeader } = await getUser(request);
 
-  if (!authSession) {
+  if (!user) {
     const url = new URL(request.url);
     url.searchParams.set("redirectTo", url.pathname + url.search);
     url.pathname = "/flow/login";
@@ -159,7 +164,5 @@ export async function requireUser(request: Request) {
     });
   }
 
-  const { user, ...session } = authSession;
-
-  return { session, user };
+  return user;
 }
