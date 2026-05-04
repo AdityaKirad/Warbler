@@ -160,6 +160,7 @@ export async function getUser(
           username: true,
           photo: true,
           profileVerified: true,
+          onboardingStepsCompleted: true,
         },
       },
     },

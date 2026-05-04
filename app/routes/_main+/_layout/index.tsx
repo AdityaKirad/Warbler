@@ -8,6 +8,7 @@ import {
   dialogContentClassName,
   DialogTrigger,
 } from "~/components/ui/dialog";
+import { useUser } from "~/hooks/use-user";
 import {
   getNextOnboardingStep,
   hasStepsAfterCurrent,
@@ -50,7 +51,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export default function Layout({ loaderData }: Route.ComponentProps) {
-  const user = loaderData.sessions.find((session) => session.active)?.user;
+  const user = useUser();
   const onboardingStep = getNextOnboardingStep(user?.onboardingStepsCompleted);
   const hasNextStep = hasStepsAfterCurrent(user?.onboardingStepsCompleted);
 

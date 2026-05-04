@@ -6,7 +6,12 @@ export const sessionDataStorage = createCookieSessionStorage<{
     session: { updatedAt: number; expiresAt: number };
     user: Pick<
       UserSelectType,
-      "id" | "name" | "username" | "photo" | "profileVerified"
+      | "id"
+      | "name"
+      | "username"
+      | "photo"
+      | "profileVerified"
+      | "onboardingStepsCompleted"
     >;
   };
   updatedAt: number;
