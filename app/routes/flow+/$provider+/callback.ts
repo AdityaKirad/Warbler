@@ -243,6 +243,7 @@ async function findOAuthUser({
           username: true,
           photo: true,
           profileVerified: true,
+          onboardingStepsCompleted: true,
         },
       },
     },
@@ -269,6 +270,7 @@ async function findOAuthUser({
       username: true,
       photo: true,
       profileVerified: true,
+      onboardingStepsCompleted: true,
     },
     where: (user, { eq }) => eq(user.email, email),
   });
@@ -342,6 +344,7 @@ async function handleOauthSignup(
         username: user.username,
         photo: user.photo,
         profileVerified: user.profileVerified,
+        onboardingStepsCompleted: user.onboardingStepsCompleted,
       });
 
     if (!createdUser) {

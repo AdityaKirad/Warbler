@@ -19,7 +19,12 @@ export async function handleNewSession({
   session: Pick<SessionSelectType, "token" | "updatedAt" | "expiresAt">;
   user: Pick<
     UserSelectType,
-    "id" | "name" | "username" | "photo" | "profileVerified"
+    | "id"
+    | "name"
+    | "username"
+    | "photo"
+    | "profileVerified"
+    | "onboardingStepsCompleted"
   >;
   headers?: HeadersInit;
   redirectTo: string | null;

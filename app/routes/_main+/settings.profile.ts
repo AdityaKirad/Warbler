@@ -77,7 +77,7 @@ export async function action({ request }: Route.ActionArgs) {
         console.error(error);
       }
 
-      return data({ success: true });
+      return data({ success: true, result: null });
     } else {
       return data({
         success: false,
@@ -95,7 +95,7 @@ export async function action({ request }: Route.ActionArgs) {
   );
 
   return data(
-    { success: true },
+    { success: true, result: null },
     {
       headers: {
         "set-cookie": await sessionDataStorage.destroySession(session),

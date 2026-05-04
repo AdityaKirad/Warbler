@@ -36,7 +36,11 @@ export const createSession = async (
       ipAddress: getClientIPAddress(request),
       expiresAt: getExpirationDate(SESSION_EXPIRES_AGE),
     })
-    .returning();
+    .returning({
+      token: session.token,
+      updatedAt: session.updatedAt,
+      expiresAt: session.expiresAt,
+    });
 
 export async function getUsers(request: Request) {
   const cookie = request.headers.get("cookie");
