@@ -167,7 +167,9 @@ export function signup(
     userInfo,
   }: {
     password: string;
-    userInfo: Pick<UserInsertType, "name" | "email" | "emailVerified" | "dob">;
+    userInfo: Pick<UserInsertType, "name" | "email" | "emailVerified"> & {
+      dob: Date;
+    };
   },
 ) {
   return db.transaction(async (tx) => {

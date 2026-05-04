@@ -13,7 +13,7 @@ import type { UsernameLayoutLoader } from ".";
 export function ProfileData({
   user,
 }: {
-  user: NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>["data"]>;
+  user: NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>>;
 }) {
   return (
     <>

@@ -13,7 +13,7 @@ export function useEditProfile(
     coverImage,
     ...user
   }: Pick<
-    NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>["data"]>,
+    NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>>,
     "name" | "bio" | "location" | "website" | "dob" | "coverImage"
   >,
   files: {

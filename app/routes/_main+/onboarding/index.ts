@@ -48,7 +48,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-  const user = await requireUser(request);
+  const user = await requireUser(request, { getFreshSession: true });
 
   const formData = await request.formData();
 

@@ -5,7 +5,7 @@ import { and, eq, ne } from "drizzle-orm";
 import type { Route } from "./+types/remote.ts";
 
 export async function action({ request }: Route.ActionArgs) {
-  const { id } = await requireUser(request);
+  const { id } = await requireUser(request, { getFreshSession: true });
 
   const token = (await sessionCookie.parse(
     request.headers.get("cookie"),

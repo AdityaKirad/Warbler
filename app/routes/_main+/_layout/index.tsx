@@ -8,7 +8,6 @@ import {
   dialogContentClassName,
   DialogTrigger,
 } from "~/components/ui/dialog";
-import { useUser } from "~/hooks/use-user";
 import {
   getNextOnboardingStep,
   hasStepsAfterCurrent,
@@ -31,25 +30,27 @@ export async function loader({ request }: Route.LoaderArgs) {
     request.headers.get("cookie"),
   );
 
+  const newHeaders = new Headers(headers);
+
+  if (toastValue) {
+    newHeaders.append(
+      "set-cookie",
+      await deletePostToastCookie.serialize("", {
+        maxAge: -1,
+      }),
+    );
+  }
+
   return data(
     { sessions, toastValue },
     {
-      headers: {
-        ...Object.fromEntries(headers),
-        ...(toastValue
-          ? {
-              "set-cookie": await deletePostToastCookie.serialize("", {
-                maxAge: -1,
-              }),
-            }
-          : {}),
-      },
+      headers: newHeaders,
     },
   );
 }
 
 export default function Layout({ loaderData }: Route.ComponentProps) {
-  const user = useUser();
+  const user = loaderData.sessions.find((session) => session.active)?.user;
   const onboardingStep = getNextOnboardingStep(user?.onboardingStepsCompleted);
   const hasNextStep = hasStepsAfterCurrent(user?.onboardingStepsCompleted);
 

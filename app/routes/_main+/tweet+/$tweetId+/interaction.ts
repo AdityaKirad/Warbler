@@ -11,7 +11,7 @@ export async function action({
   request,
   params: { tweetId },
 }: Route.ActionArgs) {
-  const { id: userId } = await requireUser(request);
+  const { id: userId } = await requireUser(request, { getFreshSession: true });
 
   const formData = await request.formData();
   const interaction = formData.get("interaction")?.toString() ?? "";

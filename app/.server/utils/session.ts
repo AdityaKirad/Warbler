@@ -2,9 +2,9 @@ import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { createCookie, redirect } from "react-router";
 import { getClientIPAddress } from "remix-utils/get-client-ip-address";
 import {
-  createSessionToken,
-  getSessionExpirationDate,
-  getUserAgent,
+  getExpirationDate,
+  SESSION_EXPIRES_AGE,
+  SESSION_UPDATE_AGE,
 } from "../authentication";
 import {
   isMultiSessionCookie,
@@ -15,6 +15,7 @@ import type { DrizzleAdapter } from "../drizzle";
 import { db } from "../drizzle";
 import { session, user } from "../drizzle/schema";
 import { sessionDataStorage } from "../session/session-data";
+import { generateRandomString } from "./generate-random-string";
 import { getIpLocation } from "./ip-location";
 import { parseCookies } from "./parse-cookies";
 
@@ -30,10 +31,10 @@ export const createSession = async (
     .values({
       userId,
       location: await getIpLocation(request),
-      token: createSessionToken(),
-      userAgent: getUserAgent(request),
+      token: generateRandomString(32),
+      userAgent: request.headers.get("user-agent"),
       ipAddress: getClientIPAddress(request),
-      expiresAt: getSessionExpirationDate(),
+      expiresAt: getExpirationDate(SESSION_EXPIRES_AGE),
     })
     .returning();
 
@@ -81,6 +82,7 @@ export async function getUsers(request: Request) {
         username: user.username,
         photo: user.photo,
         profileVerified: user.profileVerified,
+        onboardingStepsCompleted: user.onboardingStepsCompleted,
       },
     })
     .from(session)
@@ -98,12 +100,54 @@ export async function getUsers(request: Request) {
 
 export async function getUser(
   request: Request,
-  { getFreshSession = false }: { getFreshSession?: boolean } = {},
+  options?: { getFreshSession?: boolean },
 ) {
-  const token = await sessionCookie.parse(request.headers.get("cookie"));
+  const cookie = request.headers.get("cookie");
 
-  if (!token) {
-    return { clearSessionHeader: null, user: null };
+  const sessionToken = await sessionCookie.parse(cookie);
+
+  if (!sessionToken) {
+    return { user: null };
+  }
+
+  const sessionData = await sessionDataStorage.getSession(cookie);
+
+  const cachedSession = sessionData.get("session");
+
+  const now = Date.now();
+
+  const headers = new Headers();
+
+  if (cachedSession && !options?.getFreshSession) {
+    const cachedSessionExpiresAt = sessionData.get("expiresAt") as number;
+    const hasExpired =
+      cachedSession.session.expiresAt < now || cachedSessionExpiresAt < now;
+
+    if (hasExpired) {
+      headers.append(
+        "set-cookie",
+        await sessionDataStorage.destroySession(sessionData),
+      );
+    } else {
+      const timeUntilExpiry = cachedSessionExpiresAt - now;
+      const updateAge = 60 * 1000;
+      if (timeUntilExpiry < updateAge) {
+        const newExpiresAt = getExpirationDate(5 * 60).getTime();
+
+        sessionData.set("session", cachedSession);
+        sessionData.set("expiresAt", newExpiresAt);
+        sessionData.set("updatedAt", now);
+
+        headers.append(
+          "set-cookie",
+          await sessionDataStorage.commitSession(sessionData),
+        );
+
+        return { headers, user: cachedSession.user };
+      }
+
+      return { headers, user: cachedSession.user };
+    }
   }
 
   const dbSession = await db.query.session.findFirst({
@@ -116,28 +160,110 @@ export async function getUser(
           username: true,
           photo: true,
           profileVerified: true,
-          onboardingStepsCompleted: true,
         },
       },
     },
-    where: (session, { eq }) => eq(session.token, token),
+    where: (session, { eq }) => eq(session.token, sessionToken),
   });
 
   if (!dbSession || dbSession.expiresAt < new Date()) {
+    headers.append(
+      "set-cookie",
+      await sessionCookie.serialize("", { maxAge: -1 }),
+    );
     if (dbSession) {
       void db
         .delete(session)
-        .where(eq(session.token, token))
+        .where(eq(session.token, sessionToken))
         .catch((err) => console.error("Failed to delete session:", err));
     }
 
     return {
-      clearSessionHeader: await sessionCookie.serialize("", { maxAge: -1 }),
-      user: null,
+      headers,
     };
   }
 
+  const sessionIsDueToUpdatedDate =
+    dbSession.expiresAt.getTime() -
+    SESSION_EXPIRES_AGE * 1000 +
+    SESSION_UPDATE_AGE * 1000;
+  const sessionShouldBeUpdated = sessionIsDueToUpdatedDate <= now;
+
+  if (sessionShouldBeUpdated) {
+    const [updatedSession] = await db
+      .update(session)
+      .set({
+        expiresAt: getExpirationDate(SESSION_EXPIRES_AGE),
+      })
+      .where(eq(session.token, sessionToken))
+      .returning({
+        token: session.token,
+        updatedAt: session.updatedAt,
+        expiresAt: session.expiresAt,
+      });
+
+    if (!updatedSession) {
+      headers.append(
+        "set-cookie",
+        await sessionCookie.serialize("", { maxAge: -1 }),
+      );
+      headers.append(
+        "set-cookie",
+        await sessionDataStorage.destroySession(sessionData),
+      );
+
+      return { headers };
+    }
+
+    const sessionCacheExpires = getExpirationDate(5 * 60);
+
+    sessionData.set("session", {
+      session: {
+        expiresAt: updatedSession.expiresAt.getTime(),
+        updatedAt: updatedSession.updatedAt.getTime(),
+      },
+      user: dbSession.user,
+    });
+    sessionData.set("updatedAt", now);
+    sessionData.set("expiresAt", sessionCacheExpires.getTime());
+
+    headers.append(
+      "set-cookie",
+      await sessionCookie.serialize(updatedSession.token, {
+        expires: updatedSession.expiresAt,
+      }),
+    );
+    headers.append(
+      "set-cookie",
+      await sessionDataStorage.commitSession(sessionData, {
+        expires: sessionCacheExpires,
+      }),
+    );
+
+    return { user: dbSession.user, headers };
+  }
+
+  const sessionCacheExpires = getExpirationDate(5 * 60);
+
+  sessionData.set("session", {
+    session: {
+      expiresAt: dbSession.expiresAt.getTime(),
+      updatedAt: dbSession.updatedAt.getTime(),
+    },
+    user: dbSession.user,
+  });
+  sessionData.set("updatedAt", now);
+  sessionData.set("expiresAt", sessionCacheExpires.getTime());
+
+  headers.append(
+    "set-cookie",
+    await sessionDataStorage.commitSession(sessionData, {
+      expires: sessionCacheExpires,
+    }),
+  );
+
   return {
+    headers,
     user: dbSession.user,
   };
 }
@@ -150,17 +276,18 @@ export async function requireAnonymous(request: Request) {
   }
 }
 
-export async function requireUser(request: Request) {
-  const { user, clearSessionHeader } = await getUser(request);
+export async function requireUser(
+  request: Request,
+  options?: { getFreshSession?: boolean },
+) {
+  const { user, headers } = await getUser(request, options);
 
   if (!user) {
     const url = new URL(request.url);
     url.searchParams.set("redirectTo", url.pathname + url.search);
     url.pathname = "/flow/login";
     throw redirect(url.toString(), {
-      headers: {
-        "set-cookie": clearSessionHeader,
-      },
+      headers,
     });
   }
 

@@ -2,7 +2,7 @@ import { createCookie } from "react-router";
 import { getHash } from "../utils/get-hash";
 
 export const SESSION_COOKIE_NAME = "__session";
-export const MULTI_SESSION_COOKIE_PREFIX = `${SESSION_COOKIE_NAME}_`;
+export const MULTI_SESSION_COOKIE_PREFIX = `${SESSION_COOKIE_NAME}_multi_`;
 
 export const sessionCookieOptions = {
   httpOnly: true,

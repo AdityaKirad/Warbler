@@ -22,14 +22,10 @@ export function meta({ matches }: Route.MetaArgs) {
 }
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  const { user: currentUser, clearSessionHeader } = await getUser(request);
+  const { user: currentUser } = await getUser(request);
 
   if (!currentUser) {
-    throw redirect(params.username, {
-      headers: {
-        "set-cookie": clearSessionHeader,
-      },
-    });
+    throw redirect(params.username);
   }
 
   return db

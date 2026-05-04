@@ -30,7 +30,7 @@ export function EditProfile({
   coverImage,
   ...user
 }: Pick<
-  NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>["data"]>,
+  NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>>,
   | "name"
   | "username"
   | "bio"

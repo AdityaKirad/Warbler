@@ -39,7 +39,7 @@ import {
 } from "~/routes/_main+/feed-queries.server";
 import { format } from "date-fns";
 import { eq } from "drizzle-orm";
-import { data, Link, useFetcher } from "react-router";
+import { Link, useFetcher } from "react-router";
 import type { Route } from "./+types";
 
 export const meta = ({ loaderData: { post } }: Route.MetaArgs) => [
@@ -49,9 +49,7 @@ export const meta = ({ loaderData: { post } }: Route.MetaArgs) => [
 ];
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  const { user: currentUser, clearSessionHeader } = await getUser(request);
-
-  const currentUserId = currentUser?.id;
+  const { user: currentUser } = await getUser(request);
 
   const [post] = await db
     .select({
@@ -65,12 +63,12 @@ export async function loader({ params, request }: Route.LoaderArgs) {
         bookmarks: interactionCount({ tweetId: tweet.id, type: "bookmark" }),
       },
 
-      ...(currentUserId
+      ...(currentUser?.id
         ? {
-            ...tweetViewerField(currentUserId),
+            ...tweetViewerField(currentUser.id),
             following: followingFlag({
               followingId: tweet.userId,
-              followerId: currentUserId,
+              followerId: currentUser.id,
             }),
           }
         : {}),
@@ -86,20 +84,15 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const cursor = url.searchParams.get("cursor");
 
-  const replies = currentUserId
-    ? await getTweetReplies({ cursor, tweetId: post.id, userId: currentUserId })
+  const replies = currentUser?.id
+    ? await getTweetReplies({
+        cursor,
+        tweetId: post.id,
+        userId: currentUser.id,
+      })
     : [];
 
-  return data(
-    { post, replies },
-    {
-      headers: clearSessionHeader
-        ? {
-            "set-cookie": clearSessionHeader,
-          }
-        : {},
-    },
-  );
+  return { post, replies };
 }
 
 export default function Page({
@@ -184,7 +177,7 @@ export default function Page({
 function TweetContent({
   tweet,
 }: {
-  tweet: Awaited<ReturnType<typeof loader>>["data"]["post"];
+  tweet: Awaited<ReturnType<typeof loader>>["post"];
 }) {
   const fetcher = useFetcher();
   const formId = `tweet-${tweet.id}-engagement`;

@@ -17,7 +17,7 @@ import { Toaster } from "./components/ui/sonner";
 import { LoginDialog } from "./routes/flow+/login";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const { user, clearSessionHeader } = await getUser(request);
+  const { user, headers } = await getUser(request);
 
   return data(
     {
@@ -27,11 +27,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       partykitUrl: process.env.PARTYKIT_URL,
     },
     {
-      headers: clearSessionHeader
-        ? {
-            "set-cookie": clearSessionHeader,
-          }
-        : {},
+      headers,
     },
   );
 }

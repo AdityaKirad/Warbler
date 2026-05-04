@@ -1,11 +1,16 @@
 import { createCookieSessionStorage } from "react-router";
-import type { SessionSelectType, UserSelectType } from "../drizzle";
+import type { UserSelectType } from "../drizzle";
 
 export const sessionDataStorage = createCookieSessionStorage<{
-  session: SessionSelectType;
-  user: UserSelectType;
-  updatedAt: Date;
-  expires: Date;
+  session: {
+    session: { updatedAt: number; expiresAt: number };
+    user: Pick<
+      UserSelectType,
+      "id" | "name" | "username" | "photo" | "profileVerified"
+    >;
+  };
+  updatedAt: number;
+  expiresAt: number;
 }>({
   cookie: {
     name: "__session_data",

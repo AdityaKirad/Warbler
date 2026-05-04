@@ -5,7 +5,7 @@ import { redirect } from "react-router";
 import type { Route } from "./+types/follow";
 
 export async function action({ request, params }: Route.ActionArgs) {
-  const { id } = await requireUser(request);
+  const { id } = await requireUser(request, { getFreshSession: true });
 
   const followingId = sql<string>`
     (
