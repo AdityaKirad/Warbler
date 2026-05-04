@@ -8,18 +8,15 @@ import { useNavigate } from "react-router";
 import type { Route } from "./+types/photo";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const user = await getUser(request);
+  const { user } = await getUser(request);
 
-  if (!user.session) {
+  if (!user) {
     throw new Response("Not Found", {
       status: 400,
-      headers: {
-        "set-cookie": user.clearSessionHeader,
-      },
     });
   }
 
-  return user.session.user;
+  return user;
 }
 
 export const meta = ({ loaderData: user }: Route.MetaArgs) => [

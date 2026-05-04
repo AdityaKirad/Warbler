@@ -29,7 +29,7 @@ import type { UsernameLayoutLoader } from ".";
 export function ProfileActions({
   user,
 }: {
-  user: NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>["data"]>;
+  user: NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>>;
 }) {
   const currentUser = useUser();
   return (

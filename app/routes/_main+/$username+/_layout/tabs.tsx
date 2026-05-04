@@ -5,7 +5,7 @@ import type { UsernameLayoutLoader } from ".";
 export function Tabs({
   user,
 }: {
-  user: NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>["data"]>;
+  user: NonNullable<Awaited<ReturnType<UsernameLayoutLoader>>>;
 }) {
   const currentUser = useUser();
   return (

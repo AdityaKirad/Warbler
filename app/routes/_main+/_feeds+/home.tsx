@@ -9,7 +9,7 @@ import { useOptimisticTweet } from "./+use-optimistic-tweet";
 export const meta = () => [{ title: "Home / Warbler" }];
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const { user } = await requireUser(request);
+  const user = await requireUser(request);
 
   const url = new URL(request.url);
   const cursor = url.searchParams.get("cursor");

@@ -17,21 +17,17 @@ import { Toaster } from "./components/ui/sonner";
 import { LoginDialog } from "./routes/flow+/login";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const { session, clearSessionHeader } = await getUser(request);
+  const { user, headers } = await getUser(request);
 
   return data(
     {
+      user,
       CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
       honeypotProps: await honeypot.getInputProps(),
       partykitUrl: process.env.PARTYKIT_URL,
-      user: session?.user,
     },
     {
-      headers: clearSessionHeader
-        ? {
-            "set-cookie": clearSessionHeader,
-          }
-        : {},
+      headers,
     },
   );
 }

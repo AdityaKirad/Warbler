@@ -14,13 +14,11 @@ export const deletePostToastCookie = createCookie("__delete_post_toast", {
 });
 
 export async function action({ params, request }: Route.ActionArgs) {
-  const {
-    user: { id: userId },
-  } = await requireUser(request);
+  const { id } = await requireUser(request, { getFreshSession: true });
 
   const res = await db
     .delete(tweet)
-    .where(and(eq(tweet.id, params.tweetId), eq(tweet.userId, userId)))
+    .where(and(eq(tweet.id, params.tweetId), eq(tweet.userId, id)))
     .returning();
 
   const toastValue = res.length ? "success" : "error";

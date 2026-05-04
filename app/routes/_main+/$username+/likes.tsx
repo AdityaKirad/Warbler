@@ -7,7 +7,7 @@ import { getUserLikedPosts, PAGE_SIZE } from "../feed-queries.server";
 import type { Route } from "./+types/likes";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  const { user } = await requireUser(request);
+  const user = await requireUser(request);
 
   if (params.username !== user.username) {
     throw redirect(params.username);

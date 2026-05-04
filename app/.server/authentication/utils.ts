@@ -1,17 +1,11 @@
 import { redirect } from "react-router";
 import { flashSessionStorage } from "../session/flash";
-import { generateRandomString } from "../utils/generate-random-string";
 
-export const createSessionToken = () => generateRandomString(32);
-
-export const getUserAgent = (request: Request) =>
-  request.headers.get("user-agent");
+export const SESSION_EXPIRES_AGE = 30 * 24 * 60 * 60;
+export const SESSION_UPDATE_AGE = 15 * 24 * 60 * 60;
 
 export const getExpirationDate = (time = 600) =>
   new Date(Date.now() + time * 1000);
-
-export const getSessionExpirationDate = () =>
-  getExpirationDate(30 * 24 * 60 * 60);
 
 export const isDateExpired = (date: Date) =>
   new Date().getTime() > date.getTime();

@@ -5,9 +5,7 @@ import { redirect } from "react-router";
 import type { Route } from "./+types/follow";
 
 export async function action({ request, params }: Route.ActionArgs) {
-  const {
-    user: { id: userId },
-  } = await requireUser(request);
+  const { id } = await requireUser(request, { getFreshSession: true });
 
   const followingId = sql<string>`
     (
@@ -22,7 +20,7 @@ export async function action({ request, params }: Route.ActionArgs) {
       .delete(userFollow)
       .where(
         and(
-          eq(userFollow.followerId, userId),
+          eq(userFollow.followerId, id),
           eq(userFollow.followingId, followingId),
         ),
       )
@@ -31,7 +29,7 @@ export async function action({ request, params }: Route.ActionArgs) {
     if (!result.length) {
       await tx.insert(userFollow).values({
         followingId,
-        followerId: userId,
+        followerId: id,
       });
     }
   });

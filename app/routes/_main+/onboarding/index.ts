@@ -32,9 +32,7 @@ const avatarSchema = z.discriminatedUnion("intent", [
 ]);
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const {
-    user: { id },
-  } = await requireUser(request);
+  const { id } = await requireUser(request);
 
   const user = await db.query.user.findFirst({
     columns: { name: true, email: true, dob: true },
@@ -50,7 +48,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-  const { user } = await requireUser(request);
+  const user = await requireUser(request, { getFreshSession: true });
 
   const formData = await request.formData();
 

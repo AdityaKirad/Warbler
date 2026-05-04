@@ -3,7 +3,7 @@ import { Spinner } from "~/components/spinner";
 import { TweetCard } from "~/components/tweet-card";
 import { useInfiniteTweetsScroll } from "~/hooks/use-infinite-tweets-scroll";
 import { useUser } from "~/hooks/use-user";
-import { data, useParams } from "react-router";
+import { useParams } from "react-router";
 import { getUserPostsWithReplies, PAGE_SIZE } from "../feed-queries.server";
 import { USERNAME_LAYOUT_ROUTE_ID, type UsernameLayoutLoader } from "./_layout";
 import type { Route } from "./+types/with_replies";
@@ -12,7 +12,7 @@ export function meta({ matches }: Route.MetaArgs) {
   const match = matches.find((match) => match?.id === USERNAME_LAYOUT_ROUTE_ID);
   const loaderData = match?.loaderData as Awaited<
     ReturnType<UsernameLayoutLoader>
-  >["data"];
+  >;
 
   return [
     {
@@ -24,14 +24,10 @@ export function meta({ matches }: Route.MetaArgs) {
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-  const { session, clearSessionHeader } = await getUser(request);
+  const { user } = await getUser(request);
 
-  if (!session) {
-    return data(null, {
-      headers: {
-        "set-cookie": clearSessionHeader,
-      },
-    });
+  if (!user) {
+    return;
   }
 
   const url = new URL(request.url);
@@ -39,18 +35,18 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
   const tweets = await getUserPostsWithReplies({
     cursor,
-    userId: session.user.id,
+    userId: user.id,
     username: params.username,
   });
 
-  return data({
+  return {
     tweets,
     hasMore: tweets.length === PAGE_SIZE,
     nextCursor:
       tweets.length > 0
         ? tweets[tweets.length - 1]?.createdAt.toISOString()
         : null,
-  });
+  };
 }
 
 export default function Page({ loaderData }: Route.ComponentProps) {
@@ -78,7 +74,7 @@ function NonAuthenticatedContent() {
 function AuthenticatedContent({
   loaderData,
 }: {
-  loaderData: NonNullable<Awaited<ReturnType<typeof loader>>["data"]>;
+  loaderData: NonNullable<Awaited<ReturnType<typeof loader>>>;
 }) {
   const { fetcher, loadMoreRef, tweets } = useInfiniteTweetsScroll(loaderData);
   return (

@@ -30,7 +30,7 @@ function useProfileHoverCardLoader(username: string) {
   }
 
   return {
-    fetcher,
+    profile: fetcher.data,
     handeHoverChange,
   };
 }
@@ -40,7 +40,7 @@ export function TweetUserAvatar({
 }: {
   user: Pick<UserSelectType, "name" | "username" | "photo">;
 }) {
-  const { fetcher, handeHoverChange } = useProfileHoverCardLoader(
+  const { profile, handeHoverChange } = useProfileHoverCardLoader(
     user.username,
   );
   return (
@@ -67,7 +67,7 @@ export function TweetUserAvatar({
           </Link>
         </Avatar>
       </HoverCardTrigger>
-      <ProfileHoverCard data={fetcher.data} />
+      <ProfileHoverCard data={profile} />
     </HoverCard>
   );
 }
@@ -77,7 +77,7 @@ export function TweetUserDetails({
 }: {
   user: Pick<UserSelectType, "name" | "username">;
 }) {
-  const { fetcher, handeHoverChange } = useProfileHoverCardLoader(
+  const { profile, handeHoverChange } = useProfileHoverCardLoader(
     user.username,
   );
   return (
@@ -90,7 +90,7 @@ export function TweetUserDetails({
           @{user.username} ·{" "}
         </Link>
       </HoverCardTrigger>
-      <ProfileHoverCard data={fetcher.data} />
+      <ProfileHoverCard data={profile} />
     </HoverCard>
   );
 }

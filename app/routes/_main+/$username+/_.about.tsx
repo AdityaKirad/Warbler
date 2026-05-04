@@ -4,7 +4,7 @@ import type { Route } from "./+types/_.about";
 export async function loader({ request }: Route.LoaderArgs) {
   const user = await getUser(request);
 
-  if (!user.session) {
+  if (!user.user) {
     throw new Response("Not Found", { status: 400 });
   }
 

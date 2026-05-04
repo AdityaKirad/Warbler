@@ -50,8 +50,16 @@ export async function login(
   | { headers: HeadersInit; sessionCapReached: true }
   | {
       headers: HeadersInit;
-      session: SessionSelectType;
-      user: UserSelectType;
+      session: Pick<SessionSelectType, "token" | "updatedAt" | "expiresAt">;
+      user: Pick<
+        UserSelectType,
+        | "id"
+        | "name"
+        | "username"
+        | "photo"
+        | "profileVerified"
+        | "onboardingStepsCompleted"
+      >;
       sessionCapReached?: never;
     }
   | null
@@ -167,7 +175,9 @@ export function signup(
     userInfo,
   }: {
     password: string;
-    userInfo: Pick<UserInsertType, "name" | "email" | "emailVerified" | "dob">;
+    userInfo: Pick<UserInsertType, "name" | "email" | "emailVerified"> & {
+      dob: Date;
+    };
   },
 ) {
   return db.transaction(async (tx) => {

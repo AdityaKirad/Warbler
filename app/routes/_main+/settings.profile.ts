@@ -1,8 +1,10 @@
 import { parseWithZod } from "@conform-to/zod";
 import { cloudinary } from "~/.server/cloudinary";
 import { db, user } from "~/.server/drizzle";
+import { sessionDataStorage } from "~/.server/session/session-data";
 import { requireUser } from "~/.server/utils";
 import { eq } from "drizzle-orm";
+import { data } from "react-router";
 import { z } from "zod";
 import type { Route } from "./+types/settings.profile";
 import { baseSchema } from "./$username+/_layout/edit-profile/base-schema";
@@ -39,9 +41,7 @@ const schema = baseSchema.extend({
 });
 
 export async function action({ request }: Route.ActionArgs) {
-  const {
-    user: { id: currentUserId },
-  } = await requireUser(request);
+  const { id } = await requireUser(request, { getFreshSession: true });
 
   const formData = await request.formData();
 
@@ -50,20 +50,20 @@ export async function action({ request }: Route.ActionArgs) {
   });
 
   if (submission.status !== "success") {
-    return { success: false, result: submission.reply() };
+    return data({ success: false, result: submission.reply() });
   }
 
-  const { coverImage, ...data } = submission.value;
+  const { coverImage, ...profile } = submission.value;
 
   const isDeleteCoverImage = coverImage && "intent" in coverImage;
 
   const res = await db
     .update(user)
     .set({
-      ...data,
+      ...profile,
       coverImage: isDeleteCoverImage ? null : coverImage,
     })
-    .where(eq(user.id, currentUserId))
+    .where(eq(user.id, id))
     .returning();
 
   if (isDeleteCoverImage) {
@@ -77,18 +77,29 @@ export async function action({ request }: Route.ActionArgs) {
         console.error(error);
       }
 
-      return { success: true };
+      return data({ success: true, result: null });
     } else {
-      return {
+      return data({
         success: false,
         result: submission.reply({
           fieldErrors: {
             coverImage: ["Cannot delete the cover image"],
           },
         }),
-      };
+      });
     }
   }
 
-  return { success: true };
+  const session = await sessionDataStorage.getSession(
+    request.headers.get("cookie"),
+  );
+
+  return data(
+    { success: true, result: null },
+    {
+      headers: {
+        "set-cookie": await sessionDataStorage.destroySession(session),
+      },
+    },
+  );
 }

@@ -15,7 +15,7 @@ import { Button } from "~/components/ui/button";
 import { useUser } from "~/hooks/use-user";
 import { formatNumber } from "~/lib/utils";
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
-import { data, Link, Outlet } from "react-router";
+import { Link, Outlet } from "react-router";
 import type { Route } from "./+types";
 import { ProfileData } from "./profile-data";
 import { ProfileHeader } from "./profile-header";
@@ -27,7 +27,7 @@ export const USERNAME_LAYOUT_ROUTE_ID =
   "routes/_main+/$username+/_layout/index";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  const { session, clearSessionHeader } = await getUser(request);
+  const { user: currentUser } = await getUser(request);
 
   const { pathname } = new URL(request.url);
 
@@ -76,7 +76,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
           ),
         );
 
-  const [userData] = await db
+  const [dbUser] = await db
     .select({
       id: user.id,
       name: user.name,
@@ -97,14 +97,14 @@ export async function loader({ params, request }: Route.LoaderArgs) {
         posts: db.$count(tweet, where),
       },
 
-      ...(session?.user.id
+      ...(currentUser?.id
         ? {
             following: sql<boolean>`
               EXISTS(
                 SELECT 1 
                 FROM ${userFollow} 
                 WHERE ${userFollow.followingId} = ${user.id} 
-                AND ${userFollow.followerId} = ${session.user.id}
+                AND ${userFollow.followerId} = ${currentUser.id}
               )
             `,
           }
@@ -113,43 +113,41 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     .from(user)
     .where(eq(user.username, params.username));
 
-  return data(userData, {
-    headers: clearSessionHeader ? { "set-cookie": clearSessionHeader } : {},
-  });
+  return dbUser;
 }
 
-export default function Layout({ loaderData }: Route.ComponentProps) {
-  const user = useUser();
+export default function Layout({ loaderData: user }: Route.ComponentProps) {
+  const currentUser = useUser();
   return (
     <div className="flex min-h-screen justify-between">
       <div className="min-h-screen w-150 border-x">
         <PageTitle
-          title={loaderData ? loaderData.name : "Profile"}
-          {...(loaderData && {
-            description: formatNumber(loaderData.count.posts),
+          title={user ? user.name : "Profile"}
+          {...(user && {
+            description: formatNumber(user.count.posts),
           })}
         />
-        {loaderData ? (
+        {user ? (
           <>
-            <ProfileHeader user={loaderData} />
+            <ProfileHeader user={user} />
             <div className="mt-14 flex flex-col gap-2 p-4">
-              <ProfileData user={loaderData} />
+              <ProfileData user={user} />
               <div className="[&_span]:text-muted-foreground flex gap-4">
                 <Link
                   className="decoration-1 hover:underline focus-visible:underline"
                   to="following">
-                  {formatNumber(loaderData.count.following)}{" "}
+                  {formatNumber(user.count.following)}{" "}
                   <span className="text-sm">Following</span>
                 </Link>
                 <Link
                   className="decoration-1 hover:underline focus-visible:underline"
                   to="followers">
-                  {formatNumber(loaderData.count.followers)}{" "}
+                  {formatNumber(user.count.followers)}{" "}
                   <span className="text-sm">Followers</span>
                 </Link>
               </div>
             </div>
-            <Tabs user={loaderData} />
+            <Tabs user={user} />
             <main>
               <Outlet />
             </main>
@@ -163,8 +161,8 @@ export default function Layout({ loaderData }: Route.ComponentProps) {
           </div>
         )}
       </div>
-      {user ? <SearchFollowSidebar /> : <NonAuthenticatedSidebar />}
-      {!user && (
+      {currentUser ? <SearchFollowSidebar /> : <NonAuthenticatedSidebar />}
+      {!currentUser && (
         <div className="fixed inset-x-0 bottom-0 bg-blue-500 p-2 max-sm:hidden">
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between max-xl:max-w-4xl max-lg:max-w-2xl">
             <div className="max-md:hidden">

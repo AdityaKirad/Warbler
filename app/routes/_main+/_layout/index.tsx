@@ -31,19 +31,21 @@ export async function loader({ request }: Route.LoaderArgs) {
     request.headers.get("cookie"),
   );
 
+  const newHeaders = new Headers(headers);
+
+  if (toastValue) {
+    newHeaders.append(
+      "set-cookie",
+      await deletePostToastCookie.serialize("", {
+        maxAge: -1,
+      }),
+    );
+  }
+
   return data(
     { sessions, toastValue },
     {
-      headers: {
-        ...Object.fromEntries(headers),
-        ...(toastValue
-          ? {
-              "set-cookie": await deletePostToastCookie.serialize("", {
-                maxAge: -1,
-              }),
-            }
-          : {}),
-      },
+      headers: newHeaders,
     },
   );
 }
