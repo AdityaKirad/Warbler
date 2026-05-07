@@ -1,11 +1,16 @@
 import { parseWithZod } from "@conform-to/zod";
+import { LibsqlError } from "@libsql/client";
 import { db, user } from "~/.server/drizzle";
+import { sessionDataStorage } from "~/.server/session/session-data";
 import { generateUsernameSuggestions, requireUser } from "~/.server/utils";
 import { eq, sql } from "drizzle-orm";
 import { redirect } from "react-router";
 import { z } from "zod";
 import type { Route } from "./+types";
 import { dobSchema, usernameSchema } from "./forms";
+
+type ActionType = "avatar" | "dob" | "username";
+type ActionCtx = { userId: string; username?: string };
 
 const avatarSchema = z.discriminatedUnion("intent", [
   z.object({
@@ -31,6 +36,12 @@ const avatarSchema = z.discriminatedUnion("intent", [
   }),
 ]);
 
+const isActionType = (action: string): action is ActionType =>
+  action === "avatar" || action === "dob" || action === "username";
+
+const onboardinUpdateSql = (step: string) =>
+  sql`json_insert(${user.onboardingStepsCompleted}, '$[#]', ${step})`;
+
 export async function loader({ request }: Route.LoaderArgs) {
   const { id } = await requireUser(request);
 
@@ -52,22 +63,39 @@ export async function action({ request }: Route.ActionArgs) {
 
   const formData = await request.formData();
 
-  switch (formData.get("update")) {
+  const actionType = formData.get("action");
+
+  if (!isActionType(actionType as string)) {
+    return;
+  }
+
+  const ctx: ActionCtx = {
+    userId: user.id,
+    username: user.username,
+  };
+
+  const session = await sessionDataStorage.getSession(
+    request.headers.get("cookie"),
+  );
+
+  const clearSessionDataHeader =
+    await sessionDataStorage.destroySession(session);
+
+  switch (actionType) {
     case "avatar":
-      return handleAvatarUpdate(formData, user.id);
+      return handleAvatarUpdate(formData, ctx, clearSessionDataHeader);
     case "dob":
-      return handleUpdateDob(formData, user.id);
+      return handleUpdateDob(formData, ctx, clearSessionDataHeader);
     case "username":
-      return handleUsernameUpdate(formData, {
-        userId: user.id,
-        username: user.username,
-      });
-    default:
-      return null;
+      return handleUsernameUpdate(formData, ctx, clearSessionDataHeader);
   }
 }
 
-async function handleAvatarUpdate(formData: FormData, userId: string) {
+async function handleAvatarUpdate(
+  formData: FormData,
+  ctx: ActionCtx,
+  clearSessionDataHeader: string,
+) {
   const submission = parseWithZod(formData, { schema: avatarSchema });
 
   if (submission.status !== "success") {
@@ -79,18 +107,22 @@ async function handleAvatarUpdate(formData: FormData, userId: string) {
     .set({
       photo:
         submission.value.intent === "update" ? submission.value.avatar : null,
-      onboardingStepsCompleted: sql`
-      json_insert(
-        ${user.onboardingStepsCompleted}, '$[#]', 'profile-photo'
-      )
-    `,
+      onboardingStepsCompleted: onboardinUpdateSql("profile-photo"),
     })
-    .where(eq(user.id, userId));
+    .where(eq(user.id, ctx.userId));
 
-  throw redirect("/home");
+  throw redirect("/home", {
+    headers: {
+      "set-cookie": clearSessionDataHeader,
+    },
+  });
 }
 
-async function handleUpdateDob(formData: FormData, userId: string) {
+async function handleUpdateDob(
+  formData: FormData,
+  ctx: ActionCtx,
+  clearSessionDataHeader: string,
+) {
   const submission = parseWithZod(formData, { schema: dobSchema });
 
   if (submission.status !== "success") {
@@ -101,18 +133,21 @@ async function handleUpdateDob(formData: FormData, userId: string) {
     .update(user)
     .set({
       dob: submission.value.dob,
-      onboardingStepsCompleted: sql`
-        json_insert(${user.onboardingStepsCompleted}, '$[#]', 'dob')
-      `,
+      onboardingStepsCompleted: onboardinUpdateSql("dob"),
     })
-    .where(eq(user.id, userId));
+    .where(eq(user.id, ctx.userId));
 
-  throw redirect("/home");
+  throw redirect("/home", {
+    headers: {
+      "set-cookie": clearSessionDataHeader,
+    },
+  });
 }
 
 async function handleUsernameUpdate(
   formData: FormData,
-  { userId, username }: { userId: string; username: string },
+  ctx: ActionCtx,
+  clearSessionDataHeader: string,
 ) {
   const submission = parseWithZod(formData, { schema: usernameSchema });
 
@@ -120,39 +155,31 @@ async function handleUsernameUpdate(
     return submission.reply();
   }
 
-  const intent = formData.get("intent");
-
-  const onboardingUpdateSql = sql`json_insert(${user.onboardingStepsCompleted}, '$[#]', 'username')`;
-
-  if (intent === "update" && username !== submission.value.username) {
-    const isUsernameTaken = await db.query.user.findFirst({
-      columns: { id: true },
-      where: (user, { eq }) => eq(user.username, submission.value.username),
-    });
-
-    if (!isUsernameTaken) {
-      await db
-        .update(user)
-        .set({
-          username: submission.value.username,
-          onboardingStepsCompleted: onboardingUpdateSql,
-        })
-        .where(eq(user.id, userId));
+  try {
+    await db
+      .update(user)
+      .set({
+        username: submission.value.username,
+        onboardingStepsCompleted: onboardinUpdateSql("username"),
+      })
+      .where(eq(user.id, ctx.userId));
+  } catch (error) {
+    if (
+      error instanceof LibsqlError &&
+      error.code === "SQLITE_CONSTRAINT_UNIQUE"
+    ) {
+      return submission.reply({
+        fieldErrors: {
+          username: ["This username is already taken"],
+        },
+      });
     }
-
-    return submission.reply({
-      fieldErrors: {
-        username: ["This username is already taken"],
-      },
-    });
+    throw error;
   }
 
-  await db
-    .update(user)
-    .set({
-      onboardingStepsCompleted: onboardingUpdateSql,
-    })
-    .where(eq(user.id, userId));
-
-  throw redirect("/home");
+  throw redirect("/home", {
+    headers: {
+      "set-cookie": clearSessionDataHeader,
+    },
+  });
 }

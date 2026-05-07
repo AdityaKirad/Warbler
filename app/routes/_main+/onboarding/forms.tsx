@@ -68,7 +68,7 @@ export function DOB({
         label="Date of Birth"
       />
 
-      <input type="hidden" name="update" value="dob" />
+      <input type="hidden" name="action" value="dob" />
 
       <Button
         className="mt-auto mb-4 rounded-full"
@@ -199,7 +199,7 @@ export function ProfilePhoto({
         </TooltipProvider>
       </div>
 
-      <input type="hidden" name="update" value="avatar" />
+      <input type="hidden" name="action" value="avatar" />
 
       <Button
         className="mt-auto rounded-full"
@@ -303,7 +303,7 @@ export function Username({
         </Button>
       )}
 
-      <input type="hidden" name="update" value="username" />
+      <input type="hidden" name="action" value="username" />
 
       <Button
         className="mt-auto rounded-full"
@@ -312,16 +312,6 @@ export function Username({
         value="update"
         disabled={isPending}>
         {isPending ? <Spinner /> : hasNextStep ? "Next" : "Save"}
-      </Button>
-
-      <Button
-        className="rounded-full"
-        variant="outline"
-        type="submit"
-        name="intent"
-        value="skip"
-        disabled={isPending}>
-        Skip for now
       </Button>
     </fetcher.Form>
   );
